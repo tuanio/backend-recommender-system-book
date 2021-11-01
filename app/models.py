@@ -4,6 +4,8 @@ class Author(db.Model):
     __tablename__= "author"
     id = db.Column(db.Integer, primary_key=True)
     full_name = db.Column(db.String(255),nullable=False)
+    #relation
+    book_detail = db.relationship("BookDetail",backref = "author")
 
     def __repr__(self):
         return "<Author({}, {})>".format(self.id, self.full_name)
@@ -12,7 +14,8 @@ class Genre(db.Model):
     __tablename__ = "genre"
     id = db.Column(db.Integer, primary_key = True)
     kind = db.Column(db.String(255),nullable=False)
-
+    #relation
+    book_genre = db.relationship("BookGenre",backref = "genre")
     def __repr__(self):
         return "<Genre ({},{})>".format(self.id, self.kind)
 
@@ -20,7 +23,8 @@ class BookFormat(db.Model):
     __tablename__= "bookFormat"
     id = db.Column(db.Integer,primary_key=true)
     type = db.Column(db.String(255),nullable=False)
-
+    #relation
+    bookformat_detail = db.relationship("BookFormatDetail",backref = "bookformat" )
     def __repr__(self):
         return "<BookFormat ({},{})>".format(self.id,self.type)
 
@@ -31,7 +35,9 @@ class BookReview(db.Model):
     reviews = db.Column(db.Integer,nullable=False)
     total_ratings = db.Column(db.Integer,nullable=False)
     book_id = db.Column(db.Integer,db.ForeginKey('book.id'),nullable=False)
-    #book = db.relationship('Book',backref='book')
+    # relationship one to one 
+    book = db.relationship("Book",backref = backref("book",uselist=Fasle))
+
     def __repr__(self):
         return "<BookReview({},{},{},{},{})>".format(
             self.id,
@@ -51,6 +57,10 @@ class Book(db.Model):
     page = db.Column(db.Integer,nullable=False)
     image_url = db.Column(db.String(255),nullable=False)
     book_url = db.Column(db.String(255),nullable=False)
+    # relation
+    book_detail = db.relationship("BookDetail",backref='book')
+    book_gerne = db.relationship("BookGenrne",backref='book')
+    book_format_detail = db.relationship("BookFormatDetail",backref='book')
     def __repr__(self):
         return "<Book ({},{},{},{},{},{},{},{})>".format(
             self.id,
@@ -83,7 +93,7 @@ class BookFormatDetail(db.Model):
     __tablename__ = "bookFormatDetail"
     id = db.Column(db.Integer,primary_key= True)
     book_id = db.Column(db.Integer,db.ForeginKey("book.id"),nullable=False)
-    book_format_id = db.Column(db.Integer , db.ForeginKey("bookFormat.id"),nullable=False)
+    book_format_id= db.Column(db.Integer , db.ForeginKey("bookformat.id"),nullable=False)
 
     def __repr__(self):
         return "<BookFormatDetail({},{},{})>".format(self.id,self.book_id,self.book_format_id)
