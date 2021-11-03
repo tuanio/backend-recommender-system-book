@@ -6,7 +6,7 @@ import os
 
 app = Flask(__name__)
 
-basedir  = os.path.abspath(os.path.dirname(__file__))
+basedir = os.path.abspath(os.path.dirname(__file__))
 
 
 username = 'postgres'
@@ -19,7 +19,7 @@ host = 'localhost'
 port = '5432'
 
 
-# local config database 
+# local config database
 app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{username}:{password}@{host}:{port}/{db_name}"
 # app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite3:////test.db'
 
@@ -29,5 +29,5 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-from app.models import * # import all schema table = jls_extract_def()
 from app.routes import *
+from app.models import *
