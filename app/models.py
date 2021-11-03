@@ -17,7 +17,7 @@ class Author(db.Model):
 class Genre(db.Model):
     __tablename__ = "genre"
     id = db.Column(db.Integer, primary_key=True)
-    kind = db.Column(db.String(255), nullable=False)
+    kind = db.Column(db.String(255))
     # relation one to many
     book_genre = db.relationship("BookGenre", backref="genre")
 
@@ -29,7 +29,7 @@ class BookFormat(db.Model):
 
     __tablename__ = "bookformat"
     id = db.Column(db.Integer, primary_key=True)
-    type_ = db.Column(db.String(255), nullable=False)
+    type_ = db.Column(db.String(255))
     # relation one to many
     bookformat_detail = db.relationship(
         "BookFormatDetail", backref="bookformat", lazy=True)
@@ -41,12 +41,12 @@ class BookFormat(db.Model):
 class Book(db.Model):
     __tablename__ = "book"
     id = db.Column(db.Integer, primary_key=True)
-    isbn = db.Column(db.String(255), nullable=False)
-    isbn13 = db.Column(db.String(255), nullable=False)
-    title = db.Column(db.String(255), nullable=False)
+    isbn = db.Column(db.String(255))
+    isbn13 = db.Column(db.String(255))
+    title = db.Column(db.String(255))
     desc = db.Column(db.String(15000))
     pages = db.Column(db.Integer, nullable=False)
-    image_url = db.Column(db.String(255), nullable=False)
+    image_url = db.Column(db.String(255))
     book_url = db.Column(db.String(255), nullable=False)
     # relation one to many
     book_detail = db.relationship(
@@ -64,7 +64,7 @@ class Book(db.Model):
             self.isbn13,
             self.title,
             self.desc,
-            self.page,
+            self.pages,
             self.image_url,
             self.book_url
         )
