@@ -11,7 +11,7 @@ basedir  = os.path.abspath(os.path.dirname(__file__))
 
 username = 'postgres'
 
-password = 'hmtoan30'
+password = '114001'
 
 db_name = 'goodbooks'
 host = 'localhost'
@@ -28,6 +28,14 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 
 db = SQLAlchemy(app)
+engine_container = db.get_engine(app)
+
+def cleanup(session):
+    """
+    This method cleans up the session object and also closes the connection pool using the dispose method.
+    """
+    session.close()
+    engine_container.dispose()
 
 from app.models import * # import all schema table = jls_extract_def()
 from app.routes import *
