@@ -19,7 +19,7 @@ class Author(db.Model):
 class Genre(db.Model):
     __tablename__ = "genre"
     id = db.Column(db.Integer, primary_key=True)
-    kind = db.Column(db.String(255), nullable=False)
+    kind = db.Column(db.String(255))
     # relation one to many
     book_genre = db.relationship("BookGenre", backref="genre")
 
@@ -31,7 +31,7 @@ class BookFormat(db.Model):
 
     __tablename__ = "bookformat"
     id = db.Column(db.Integer, primary_key=True)
-    type_ = db.Column(db.String(255), nullable=False)
+    type_ = db.Column(db.String(255))
     # relation one to many
     bookformat_detail = db.relationship(
         "BookFormatDetail", backref="bookformat", lazy=True)
