@@ -1,6 +1,8 @@
 from app import db
 
 # db.relationship(name_of_class, back_ref ="name_of_relation", lazy= True)
+db.drop_all()
+db.metadata.clear()
 
 
 class Author(db.Model):
@@ -41,21 +43,18 @@ class BookFormat(db.Model):
 class Book(db.Model):
     __tablename__ = "book"
     id = db.Column(db.Integer, primary_key=True)
-    isbn = db.Column(db.String(255), nullable=False)
-    isbn13 = db.Column(db.String(255), nullable=False)
-    title = db.Column(db.String(255), nullable=False)
+    isbn = db.Column(db.String(255))
+    isbn13 = db.Column(db.String(255))
+    title = db.Column(db.String(255))
     desc = db.Column(db.String(15000))
-    pages = db.Column(db.Integer, nullable=False)
-    image_url = db.Column(db.String(255), nullable=False)
-    book_url = db.Column(db.String(255), nullable=False)
-    # relation one to many
-    book_detail = db.relationship(
-        "BookDetail", backref="book_detail", lazy=True)
-    book_genre = db.relationship("BookGenre", backref="book_genre", lazy=True)
-    book_format_detail = db.relationship(
-        "BookFormatDetail", backref="book_format", lazy=True)
-    book_review = db.relationship(
-        "BookReview", back_populates="book", uselist=False)
+    pages = db.Column(db.Integer)
+    image_url = db.Column(db.String(255))
+    book_url = db.Column(db.String(255))
+    #relation one to many
+    book_detail = db.relationship("BookDetail",backref="book_detail",lazy=True)
+    book_genre = db.relationship("BookGenre",backref="book_genre",lazy=True)
+    book_format_detail = db.relationship("BookFormatDetail",backref="book_format",lazy=True)
+    book_review = db.relationship("BookReview",back_populates="book", uselist=False)
 
     def __repr__(self):
         return "<Book ({},{},{},{},{},{},{},{})>".format(
@@ -64,7 +63,7 @@ class Book(db.Model):
             self.isbn13,
             self.title,
             self.desc,
-            self.page,
+            self.pages,
             self.image_url,
             self.book_url
         )
