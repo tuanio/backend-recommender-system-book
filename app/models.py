@@ -11,6 +11,7 @@ class Author(db.Model):
     full_name = db.Column(db.String(255), nullable=False)
     # relation one to many
     book_detail = db.relationship("BookDetail", backref="author", lazy=True)
+    author_counts = db.relationship("AuthorCount", backref="author_counts", lazy=True)
 
     def __repr__(self):
         return "<Author({}, {})>".format(self.id, self.full_name)
@@ -22,7 +23,7 @@ class Genre(db.Model):
     kind = db.Column(db.String(255))
     # relation one to many
     book_genre = db.relationship("BookGenre", backref="genre")
-
+    genre_counts = db.relationship("GenreCount", backref="genre_counts", lazy=True)  
     def __repr__(self):
         return "<Genre ({},{})>".format(self.id, self.kind)
 
@@ -55,7 +56,7 @@ class Book(db.Model):
     book_genre = db.relationship("BookGenre",backref="book_genre",lazy=True)
     book_format_detail = db.relationship("BookFormatDetail",backref="book_format",lazy=True)
     book_review = db.relationship("BookReview",back_populates="book", uselist=False)
-    book_recommend = db.relationship("BookRecommend",backref="book_recommend",lazy=True)
+    book_description = db.relationship("BookDescriptionSimilarities",backref="book_description",lazy=True)
 
     def __repr__(self):
         return "<Book ({},{},{},{},{},{},{},{})>".format(
@@ -77,9 +78,10 @@ class BookReview(db.Model):
     reviews = db.Column(db.Integer, nullable=False)
     total_ratings = db.Column(db.Integer, nullable=False)
     book_id = db.Column(db.Integer, db.ForeignKey("book.id"))
+    wegith
     # relationship one to one (khong duoc )
     book = db.relationship("Book", back_populates="book_review")
-
+    book_rating = db.relationship("BookRating",backref="book_rating", lazy=True)
     def __repr__(self):
         return "<BookReview({},{},{},{},{})>".format(
             self.id,
@@ -121,14 +123,14 @@ class BookFormatDetail(db.Model):
     def __repr__(self):
         return "<BookFormatDetail({},{},{})>".format(self.id, self.book_id, self.book_format_id)
 
-class BookRecommend(db.Model):
-    __tablename__ = "bookrecommend"
+class BookDescriptionSimilarities(db.Model):
+    __tablename__ = "bookdescriptionsimilarities"
     id = db.Column(db.Integer, primary_key=True)
     book_id = db.Column(db.Integer, db.ForeignKey("book.id"), nullable=False)
     book_recommend_id = db.Column(db.Integer)
 
     def __repr__(self):
-        return "<BookRecommend({},{},{})>".format(self.id,self.book_id,self.book_recommend_id)
+        return "<BookDescription({},{},{})>".format(self.id,self.book_id,self.book_recommend_id)
 
 class User(db.Model):
     __tablename__ = "user"
@@ -137,7 +139,48 @@ class User(db.Model):
     user_name = db.Column(db.String(255), nullable=False)
     user_email = db.Column(db.String(255))
     #relation one to many with keyword
-    keywords = db.relationship("Keyword",backref = "keywords",lazy=True) 
-
+    keywords = db.relationship("Keyword",backref = "keywords", lazy=True) 
+    book_search = db.relationship("BookRating",backref= "book_search", lazy=True)
+    author_counts = db.relationship("AuthorCount", backref = "author_counts")
+    genre_counts = db.relationship("GenreCount", backref = "genre_counts")
     def __repr__(self):
         return "<User({},{},{},{})>".format(self.id,self.user_id,self.user_name,self.user_email)
+
+class KeyWord(db.Model):
+    __tablename__ = "keyword"
+    id = db.Column(db.Integer, primary_key=True)
+    keyword = db.Column(db.String(255))
+    user_id = db.Column(db.String(255), db.ForeignKey("user.user_id"), nullable=False)
+
+    def __repr__(self):
+        return "<KeyWord({},{},{})>".format(self.id,self.keyword,self.user_id)
+
+class BookRating(db.Model):
+    __tablename__ = "bookrating"
+    id = db.Column(db.Integer, primary_key=True)   
+    rating = db.Column(db.Integer, nullable=Fasle)
+    book_id = db.Column(db.Integer,db.ForeignKey("bookreview.book_id"),nullable=False)  
+    user_id = db.Column(db.String(255), db.ForeignKey("user.user_id"), nullable=False)
+
+    def __repr__(self):
+        return "<BookRating({},{},{},{})>".format(self.id,self.rating,self.book_id,self.user_id)
+
+class AuthorCount(db.Model):
+    __tablename__ = "authorcount"
+    id = db.Column(db.Integer, primary_key=True)
+    numbers_counts = db.Column(db.Integer ,nullable = False)
+    author_id = db.Column(db.Integer, db.ForeignKey("author.id"), nullable=False)
+    user_id = db.Column(db.String(255),db.ForeignKey("user.user_id"), nullable=False)
+
+    def __repr__(self):
+        return "<AuthorCount ({},{},{},{})>".format(self.id,self.numbers_counts,self.author_id,self.user_id)
+
+class GenreCount(db.Model):
+    __tablename__ = "genrecount"
+    id = db.Column(db.Integer, primary_key=True)
+    numbers_counts = db.Column(db.Integer ,nullable = False)
+    genre_id = db.Column(db.Integer, db.ForeignKey("genre.id"), nullable=False)
+    user_id = db.Column(db.String(255),db.ForeignKey("user.user_id"), nullable=False)
+
+    def __repr__(self):
+        return "<GerneCount ({},{},{},{})>".format(self.id,self.numbers_counts,self.genre_id,self.user_id)
