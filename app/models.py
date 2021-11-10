@@ -70,25 +70,26 @@ class Book(db.Model):
             self.book_url
         )
 
-# class BookReview(db.Model):
-#     __tablename__ = 'bookreview'
-#     id = db.Column(db.Integer, primary_key=True)
-#     rating = db.Column(db.Float, nullable=False)
-#     reviews = db.Column(db.Integer, nullable=False)
-#     total_ratings = db.Column(db.Integer, nullable=False)
-#     book_id = db.Column(db.Integer, db.ForeignKey("book.id"))
-#     wegith
-#     # relationship one to one (khong duoc )
-#     book = db.relationship("Book", back_populates="book_review")
-#     book_rating = db.relationship("BookRating",backref="book_rating", lazy=True)
-#     def __repr__(self):
-#         return "<BookReview({},{},{},{},{})>".format(
-#             self.id,
-#             self.rating,
-#             self.reviews,
-#             self.total_ratings,
-#             self.book_id
-#         )
+class BookReview(db.Model):
+    __tablename__ = 'bookreview'
+    id = db.Column(db.Integer, primary_key=True)
+    rating = db.Column(db.Float, nullable=False)
+    reviews = db.Column(db.Integer, nullable=False)
+    total_ratings = db.Column(db.Integer, nullable=False)
+    book_id = db.Column(db.Integer, db.ForeignKey("book.id"))
+    weigthed_rating = db.Column(db.Float)
+    # relationship one to one (khong duoc )
+    book = db.relationship("Book", back_populates="book_review")
+    book_rating = db.relationship("BookRating",backref="book_rating", lazy=True)
+    def __repr__(self):
+        return "<BookReview({},{},{},{},{},{})>".format(
+            self.id,
+            self.rating,
+            self.reviews,
+            self.total_ratings,
+            self.book_id,
+            self.weigthed_rating
+        )
 
 
 class BookDetail(db.Model):
@@ -117,7 +118,7 @@ class BookFormatDetail(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     book_id = db.Column(db.Integer, db.ForeignKey("book.id"), nullable=False)
     book_format_id = db.Column(
-        db.Integer, db.ForeignKey("bookformat.id"), nullable=False)
+    db.Integer, db.ForeignKey("bookformat.id"), nullable=False)
 
     def __repr__(self):
         return "<BookFormatDetail({},{},{})>".format(self.id, self.book_id, self.book_format_id)
