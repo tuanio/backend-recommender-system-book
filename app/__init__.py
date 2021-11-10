@@ -11,7 +11,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 username = 'postgres'
 
-password = 'hmtoan30'
+password = '114001'
 
 db_name = 'goodbooks'
 host = 'localhost'

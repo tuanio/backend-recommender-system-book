@@ -130,14 +130,14 @@ class BookRecommend(db.Model):
     def __repr__(self):
         return "<BookRecommend({},{},{})>".format(self.id,self.book_id,self.book_recommend_id)
 
-class User(db.Model):
-    __tablename__ = "user"
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.String(255), nullable=False)
-    user_name = db.Column(db.String(255), nullable=False)
-    user_email = db.Column(db.String(255))
-    #relation one to many with keyword
-    keywords = db.relationship("Keyword",backref = "keywords",lazy=True) 
+# class User(db.Model):
+#     __tablename__ = "user"
+#     id = db.Column(db.Integer, primary_key=True)
+#     user_id = db.Column(db.String(255), nullable=False)
+#     user_name = db.Column(db.String(255), nullable=False)
+#     user_email = db.Column(db.String(255))
+#     #relation one to many with keyword
+#     keywords = db.relationship("Keyword",backref = "keywords",lazy=True) 
 
-    def __repr__(self):
-        return "<User({},{},{},{})>".format(self.id,self.user_id,self.user_name,self.user_email)
+#     def __repr__(self):
+#         return "<User({},{},{},{})>".format(self.id,self.user_id,self.user_name,self.user_email)
