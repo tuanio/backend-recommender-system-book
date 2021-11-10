@@ -243,7 +243,7 @@ for i in range(recommend.shape[0]):
     book_id += [recommend.iloc[i, 0]] * 10  # a book_id correspond to 10 similar other book_id.
     book_similar_id = recommend.iloc[i, 1]
 
-list_book_remmend = [BookRecommend(book_id=bo_id, book_recommend_id=l_bo_id) \
+list_book_remmend = [BookDescriptionSimilarities(book_id=bo_id, book_recommend_id=l_bo_id) \
                     for bo_id, l_bo_id in zip(book_id, book_similar_id)]
 
 db.session.bulk_save_objects(list_book_remmend)
