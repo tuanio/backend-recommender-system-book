@@ -78,17 +78,18 @@ class BookReview(db.Model):
     reviews = db.Column(db.Integer, nullable=False)
     total_ratings = db.Column(db.Integer, nullable=False)
     book_id = db.Column(db.Integer, db.ForeignKey("book.id"))
-    wegith
+    weigthed_rating = db.Column(db.Float)
     # relationship one to one (khong duoc )
     book = db.relationship("Book", back_populates="book_review")
     book_rating = db.relationship("BookRating",backref="book_rating", lazy=True)
     def __repr__(self):
-        return "<BookReview({},{},{},{},{})>".format(
+        return "<BookReview({},{},{},{},{},{})>".format(
             self.id,
             self.rating,
             self.reviews,
             self.total_ratings,
-            self.book_id
+            self.book_id,
+            self.weigthed_rating
         )
 
 
@@ -118,7 +119,7 @@ class BookFormatDetail(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     book_id = db.Column(db.Integer, db.ForeignKey("book.id"), nullable=False)
     book_format_id = db.Column(
-        db.Integer, db.ForeignKey("bookformat.id"), nullable=False)
+    db.Integer, db.ForeignKey("bookformat.id"), nullable=False)
 
     def __repr__(self):
         return "<BookFormatDetail({},{},{})>".format(self.id, self.book_id, self.book_format_id)
@@ -158,7 +159,7 @@ class KeyWord(db.Model):
 class BookRating(db.Model):
     __tablename__ = "bookrating"
     id = db.Column(db.Integer, primary_key=True)   
-    rating = db.Column(db.Integer, nullable=Fasle)
+    rating = db.Column(db.Integer, nullable=False)
     book_id = db.Column(db.Integer,db.ForeignKey("bookreview.book_id"),nullable=False)  
     user_id = db.Column(db.String(255), db.ForeignKey("user.user_id"), nullable=False)
 
