@@ -3,7 +3,6 @@ from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 import os
 
-
 app = Flask(__name__)
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -24,6 +23,11 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 engine_container = db.get_engine(app)
+
+status_code = dict(
+    SUCCESS=1,
+    FAILURE=0
+)
 
 from app.routes import *
 from app.models import *

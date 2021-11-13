@@ -20,3 +20,7 @@ def cleanup(session):
     """
     session.close()
     engine_container.dispose()
+
+
+def get_subset(dictionary, keys):
+    return {k: dictionary[k] for k in keys}
