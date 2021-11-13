@@ -8,7 +8,7 @@ Contact: github.com/Thinh127
 from os import replace
 from app import db
 from app import cleanup
-from app.models import Author, BookFormatDetail, Genre, Book, BookFormat, BookGenre, BookReview, BookDetail
+from app.models import *
 from app.dto import BookDto
 import pandas as pd
 import numpy as np
@@ -229,6 +229,26 @@ list_format_detail = [BookFormatDetail(
     book_id=bo_id, book_format_id=bo_f_id) for bo_id, bo_f_id in zip(book_id, book_format_id)]
 
 db.session.bulk_save_objects(list_format_detail)
+db.session.commit()
+
+"""
+Table BOOK_RECOMMEND
+"""
+
+recommend = pd.read_json('..\\notebooks\\book_descriptions_recommend_data.json') # json file storing book recommend by book id
+
+BOOK_RECOMMEND = {'book_id': [], 'list_books': []}
+
+for i in range(recommend.shape[0]):
+    list_books = recommend.iloc[i, 1]
+    for b in list_books:
+        BOOK_RECOMMEND['book_id'].append(i+1)
+        BOOK_RECOMMEND['list_books'].append(b)
+
+list_book_remmend = [BookDescriptionSimilarities(book_id=bo_id, book_recommend_id=l_bo_id) \
+                    for bo_id, l_bo_id in zip(BOOK_RECOMMEND['book_id'], BOOK_RECOMMEND['list_books'])]
+
+db.session.bulk_save_objects(list_book_remmend)
 db.session.commit()
 
 # Close connection when done
