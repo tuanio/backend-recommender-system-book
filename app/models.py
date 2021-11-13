@@ -140,8 +140,8 @@ class User(db.Model):
     user_name = db.Column(db.String(255), nullable=False)
     user_email = db.Column(db.String(255))
     #relation one to many with keyword
-    keywords = db.relationship("Keyword",backref = "keywords", lazy=True) 
-    book_search = db.relationship("BookRating",backref= "book_search", lazy=True)
+    keywords = db.relationship("KeyWord",backref = "keywords", lazy=True) 
+    book_rating = db.relationship("BookRating",backref= "book_rating", lazy=True)
     author_counts = db.relationship("AuthorCount", backref = "author_counts")
     genre_counts = db.relationship("GenreCount", backref = "genre_counts")
     def __repr__(self):
