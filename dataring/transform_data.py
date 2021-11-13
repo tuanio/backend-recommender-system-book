@@ -7,7 +7,7 @@ Contact: github.com/Thinh127
 
 from os import replace
 from app import db
-from app import cleanup
+from app.utils import cleanup
 from app.models import *
 from app.dto import BookDto
 import pandas as pd
@@ -15,7 +15,7 @@ import numpy as np
 import re
 
 # load data
-master_file = pd.read_csv('..\\notebooks\\42_genre_wr_gt_4.csv')
+master_file = pd.read_csv('../notebooks/50_genre_800_author_wr_gt_4.csv')
 
 """
 
