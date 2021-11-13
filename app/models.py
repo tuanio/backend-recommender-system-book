@@ -55,6 +55,7 @@ class Book(db.Model):
     book_genre = db.relationship("BookGenre",backref="book_genre",lazy=True)
     book_format_detail = db.relationship("BookFormatDetail",backref="book_format",lazy=True)
     book_review = db.relationship("BookReview",back_populates="book", uselist=False)
+    book_recommend = db.relationship("BookRecommend",backref="book_recommend",lazy=True)
 
     def __repr__(self):
         return "<Book ({},{},{},{},{},{},{},{})>".format(
@@ -119,3 +120,24 @@ class BookFormatDetail(db.Model):
 
     def __repr__(self):
         return "<BookFormatDetail({},{},{})>".format(self.id, self.book_id, self.book_format_id)
+
+class BookRecommend(db.Model):
+    __tablename__ = "bookrecommend"
+    id = db.Column(db.Integer, primary_key=True)
+    book_id = db.Column(db.Integer, db.ForeignKey("book.id"), nullable=False)
+    book_recommend_id = db.Column(db.Integer)
+
+    def __repr__(self):
+        return "<BookRecommend({},{},{})>".format(self.id,self.book_id,self.book_recommend_id)
+
+class User(db.Model):
+    __tablename__ = "user"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(255), nullable=False)
+    user_name = db.Column(db.String(255), nullable=False)
+    user_email = db.Column(db.String(255))
+    #relation one to many with keyword
+    keywords = db.relationship("Keyword",backref = "keywords",lazy=True) 
+
+    def __repr__(self):
+        return "<User({},{},{},{})>".format(self.id,self.user_id,self.user_name,self.user_email)
