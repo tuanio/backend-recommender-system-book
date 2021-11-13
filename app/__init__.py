@@ -8,21 +8,16 @@ app = Flask(__name__)
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-
-username = 'postgres'
-
-password = '114001'
-
-db_name = 'goodbooks'
-host = 'localhost'
-
-port = '5432'
-
+username = os.environ['PGUSER']
+password = os.environ['PGPASSWORD']
+db_name = os.environ['PGDATABASE']
+host = os.environ['PGHOST']
+port = os.environ['PGPORT']
+uri = 'postgresql://postgres:QXZBxN4YExfeCmlNhLKz@containers-us-west-9.railway.app:7267/railway'
 
 # local config database
-app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{username}:{password}@{host}:{port}/{db_name}"
-# app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite3:////test.db'
-
+# app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{username}:{password}@{host}:{port}/{db_name}"
+app.config['SQLALCHEMY_DATABASE_URI'] = uri
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
