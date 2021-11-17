@@ -7,7 +7,7 @@ Contact: github.com/Thinh127
 
 from os import replace
 from app import db
-from app.utils import cleanup
+from app.utils import cleanup, write
 from app.models import *
 from app.dto import BookDto
 import pandas as pd
@@ -17,61 +17,60 @@ import re
 # load data
 master_file = pd.read_csv('../notebooks/50_genre_800_author_wr_gt_4.csv')
 
-"""
+write("""
 
 Table AUTHORS
 
-"""
+""")
 
 authors_name = master_file['author'].unique()  # get unique name of authors
 
-authors_name = [name.strip() for au in authors_name for name in au.split(
-    ',') if re.match(f'\w', str(name))]
+authors_name = [name.strip() for au in authors_name for name in au.split(',') if re.match(f'\w', str(name))]
 
-authors_name = list(set(authors_name))
+authors_name = set(authors_name)
 
 authors_list = [Author(full_name=v) for v in authors_name]
 
 db.session.bulk_save_objects(authors_list)
 db.session.commit()
 
-"""
+write("""
 
 Table GENRE
 
-"""
+""")
 
 genre_unique = master_file['genre'].unique()
 
-genre = [g.lower() for i in genre_unique for g in str(i).split(',')]
-genre = list(set(genre))
+genre = [g for i in genre_unique for g in str(i).split(',')]
+genre = set(genre)
 
 list_genre = [Genre(kind=v) for v in genre]
 db.session.bulk_save_objects(list_genre)
 db.session.commit()
 
-"""
+write("""
 
 TABLE BOOK_FORMAT
 
-"""
+""")
 
 book_format_unique = master_file['bookformat'].unique()
 
-book_format = [str(bf).lower() for bf in book_format_unique
-               if re.match(r'\w', str(bf)) and str(bf).lower() != 'nan']
+book_format = [str(bf) for bf in book_format_unique
+               if re.match(r'\w', str(bf)) and str(bf) != 'nan']
 
-book_format = list(set(book_format))
+book_format = set(book_format)
 
 list_book = [BookFormat(type_=v) for v in book_format]
 db.session.bulk_save_objects(list_book)
 db.session.commit()
 
-"""
+write("""
 
 Table BOOK
 
-"""
+""")
 
 table_temp = master_file[['isbn', 'isbn13',
                           'title', 'desc', 'pages', 'img', 'link']].copy()
@@ -85,11 +84,11 @@ list_books = [Book(**BookDto(**dict(table_temp.iloc[i, :])).dict())
 db.session.bulk_save_objects(list_books)
 db.session.commit()
 
-"""
+write("""
 
 Table BOOK_REVIEW
 
-"""
+""")
 
 book_id = np.arange(1, master_file.shape[0]+1)
 book_review = master_file[['rating', 'reviews', 'totalratings']]
@@ -104,11 +103,11 @@ book_review_list = [BookReview(**dict(book_review.iloc[i, :]))
 db.session.bulk_save_objects(book_review_list)
 db.session.commit()
 
-"""
+write("""
 
 Table BOOK_DETAIL
 
-"""
+""")
 
 
 def getAuthorId(full_name):
@@ -116,11 +115,11 @@ def getAuthorId(full_name):
     This function receives a author's full_name and return book_id correspond.
     """
     default_id = 'nan'
-    global db
-    id = [i for i in db.session.query(
-        Author.id).filter_by(full_name=full_name).all()]
-    if len(id) != 0:
-        return id[0][0]
+    # global db
+    # id = [i for i in db.session.query(Author.id).filter_by(full_name=full_name).all()]
+    id_ = db.session.query(Author.id).filter_by(full_name=full_name).first()
+    if id_:
+        return id_[0]
     return default_id
 
 
@@ -133,7 +132,7 @@ BOOK_DETAIL = {'book_id': [],
 for idx in range(BOOK.shape[0]):
     list_authors = [author.strip()
                     for author in str(BOOK.iloc[idx, 0]).split(',')
-                    if author.lower() != 'nan']
+                    if author != 'nan']
     for au in list_authors:
         au_id = getAuthorId(full_name=au)
         # plus 1 to same to id in database
@@ -147,11 +146,11 @@ list_book_detail = [BookDetail(book_id=bo_id, author_id=au_id)
 db.session.bulk_save_objects(list_book_detail)
 db.session.commit()
 
-"""
+write("""
 
 Table BOOK_GENRE
 
-"""
+""")
 
 
 def getGenreId(genre):
@@ -159,10 +158,11 @@ def getGenreId(genre):
     This function receives a book's genre and return genre_id
     """
     default_id = 'nan'
-    global db
-    id = [i for i in db.session.query(Genre.id).filter_by(kind=genre).all()]
-    if len(id) != 0:
-        return id[0][0]
+    # global db
+    # id = [i for i in db.session.query(Genre.id).filter_by(kind=genre).all()]
+    id_ = db.session.query(Genre.id).filter_by(kind=genre).first()
+    if id_:
+        return id_[0]
     return default_id
 
 
@@ -173,9 +173,9 @@ BOOK_GENRE = {'genre_id': [],
               'book_id': []}
 
 for idx in range(BOOK.shape[0]):
-    list_genre = [genre.lower().strip()
+    list_genre = [genre.strip()
                   for genre in str(BOOK.iloc[idx, 0]).split(',')
-                  if genre.lower() != 'nan']
+                  if genre != 'nan']
     for gen in list_genre:
         gen_id = getGenreId(genre=gen)
         BOOK_GENRE['book_id'].append(idx + 1)    # plus 1 to same to id table
@@ -188,11 +188,11 @@ list_genre = [BookGenre(book_id=bo_id, genre_id=gen_id)
 db.session.bulk_save_objects(list_genre)
 db.session.commit()
 
-"""
+write("""
 
 Table BOOK_FORMAT_DETAIL
 
-"""
+""")
 
 
 def getFormatId(format):
@@ -200,11 +200,12 @@ def getFormatId(format):
     This function receives a book's format and return a format_id.
     """
     default_id = 'nan'
-    global db
-    id = [i for i in db.session.query(
-        BookFormat.id).filter_by(type_=format).all()]
-    if len(id) != 0:
-        return id[0][0]
+    # global db
+    # id = [i for i in db.session.query(
+    #     BookFormat.id).filter_by(type_=format).all()]
+    id_ = db.session.query(BookFormat.id).filter_by(type_=format).first()
+    if id_:
+        return id_[0]
     return default_id
 
 
@@ -215,9 +216,9 @@ BOOK_FORMAT_DETAIL = {'format_id': [],
                       'book_id': []}
 
 for idx in range(BOOK.shape[0]):
-    list_format = [format.lower().strip()
+    list_format = [format.strip()
                    for format in str(BOOK.iloc[idx, 0]).split(',')
-                   if format.lower() != 'nan']
+                   if format != 'nan']
     for f in list_format:
         f_id = getFormatId(format=f)
         BOOK_FORMAT_DETAIL['book_id'].append(
@@ -231,9 +232,9 @@ list_format_detail = [BookFormatDetail(
 db.session.bulk_save_objects(list_format_detail)
 db.session.commit()
 
-"""
+write("""
 Table BOOK_RECOMMEND
-"""
+""")
 
 recommend = pd.read_json('..\\notebooks\\book_descriptions_recommend_data.json') # json file storing book recommend by book id
 

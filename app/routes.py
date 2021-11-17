@@ -15,6 +15,7 @@ def index():
 def get_book(book_id: int):
     '''
     return information of a book
+    # thiếu genre
     '''
     book = Book.query.filter_by(id=book_id).first().get_data()
 
@@ -124,7 +125,7 @@ def get_list_book_rated(user_id: int):
     book_rated = list(map(lambda x: Book.query.filter(Book.id == x[0]).first().get_data(), book_rating))
     for i, _ in enumerate(book_rated):
         book_rated[i]['user_rating'] = book_rating[i][1]
-    return make_response(make_data(data=book_rated, msg="Return list book rated successfully!"))
+    return make_response(make_data(data=dict(list_books=book_rated), msg="Return list book rated successfully!"))
 
 
 @app.route('/api/update-favorite/<int:user_id>/<int:book_id>')
@@ -151,3 +152,6 @@ def get_book_favorited(user_id: int):
     favorited_books = list(map(lambda x: x.get_data(
     ), Book.query.filter(Book.id.in_(favorited_book_ids)).all()))[::-1]
     return make_response(make_data(data=dict(list_books=favorited_books), msg="Return favorited book sucessfully!"))
+
+
+# @app.route('/system/')

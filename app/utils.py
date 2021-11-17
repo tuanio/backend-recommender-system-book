@@ -1,4 +1,5 @@
 from flask import jsonify
+import sys
 from app import engine_container, status_code
 
 
@@ -32,3 +33,6 @@ def make_data(data: dict=dict(), msg: str="", status: str='SUCCESS') -> dict:
         msg=msg,
         status_code=status_code[status]
     )
+
+def write(string):
+    sys.stdout.write(string + '\n')
