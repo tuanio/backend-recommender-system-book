@@ -198,7 +198,7 @@ class BookRating(db.Model):
 class AuthorCount(db.Model):
     __tablename__ = "authorcount"
     id = db.Column(db.Integer, primary_key=True, unique=True)
-    numbers_counts = db.Column(db.Integer, nullable=False, default=0)
+    numbers_counts = db.Column(db.Integer, nullable=False, default=1)
     author_id = db.Column(db.Integer, db.ForeignKey(
         "author.id"), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
@@ -210,9 +210,20 @@ class AuthorCount(db.Model):
 class GenreCount(db.Model):
     __tablename__ = "genrecount"
     id = db.Column(db.Integer, primary_key=True)
-    numbers_counts = db.Column(db.Integer, nullable=False)
+    numbers_counts = db.Column(db.Integer, nullable=False, default=1)
     genre_id = db.Column(db.Integer, db.ForeignKey("genre.id"), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
 
     def __repr__(self):
         return "<GenreCount ({},{},{},{})>".format(self.id, self.numbers_counts, self.genre_id, self.user_id)
+
+
+class BookFavorite(db.Model):
+    __tablename__ = 'bookfavorite'
+    id = db.Column(db.Integer, primary_key=True)
+    is_favorite = db.Column(db.Boolean, default=True)
+    book_id = db.Column(db.Integer, db.ForeignKey("book.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+
+    def __repr__(self):
+        return "<BookFavorite ({0.id}, {0.is_favorite}, {0.user_id}, {0.book_id})>".format(self)

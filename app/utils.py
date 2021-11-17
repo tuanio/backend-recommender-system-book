@@ -1,5 +1,5 @@
 from flask import jsonify
-from app import engine_container
+from app import engine_container, status_code
 
 
 def make_response(data={}, status=200):
@@ -24,3 +24,11 @@ def cleanup(session):
 
 def get_subset(dictionary, keys):
     return {k: dictionary[k] for k in keys}
+
+
+def make_data(data: dict=dict(), msg: str="", status: str='SUCCESS') -> dict:
+    return dict(
+        data=data,
+        msg=msg,
+        status_code=status_code[status]
+    )
