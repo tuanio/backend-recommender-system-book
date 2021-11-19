@@ -13,11 +13,11 @@ password = os.environ['PGPASSWORD']
 db_name = os.environ['PGDATABASE']
 host = os.environ['PGHOST']
 port = os.environ['PGPORT']
-uri = 'postgresql://postgres:QXZBxN4YExfeCmlNhLKz@containers-us-west-9.railway.app:7267/railway'
+uri = os.environ['DATABASE_URL']
 
 # local config database
-# app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{username}:{password}@{host}:{port}/{db_name}"
-app.config['SQLALCHEMY_DATABASE_URI'] = uri
+app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{username}:{password}@{host}:{port}/{db_name}"
+# app.config['SQLALCHEMY_DATABASE_URI'] = uri
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 

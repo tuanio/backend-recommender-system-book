@@ -13,9 +13,13 @@ from app.dto import BookDto
 import pandas as pd
 import numpy as np
 import re
+import time
+import sys
+
+start = time.time()
 
 # load data
-master_file = pd.read_csv('..\\notebooks\\42_genre_wr_gt_4.csv')
+master_file = pd.read_csv('..\\notebooks\\preprocessing_data.csv')
 
 """
 
@@ -253,3 +257,7 @@ db.session.commit()
 
 # Close connection when done
 cleanup(db.session)
+
+end = time.time()
+
+sys.stdout.write("transform_data.py -> " + str(end - start))

@@ -7,7 +7,12 @@ Contact: github.com/Thinh127
 
 from app import db
 import numpy as np
+import time
+import sys
+import os
 from psycopg2.extensions import register_adapter, AsIs
+
+start = time.time()
 
 def addapt_numpy_float64(numpy_float64):
     return AsIs(numpy_float64)
@@ -32,3 +37,16 @@ register_adapter(np.ndarray, addapt_numpy_array)
 
 db.drop_all()
 db.create_all()
+
+cmds = [
+    'transform_data.py'
+]
+
+for cmd in cmds:
+    sys.stdout.write('Running file: {} \n'.format(cmd))
+    os.system('python ' + cmd)
+    sys.stdout.write('Done job [{}] \n'.format(cmd))
+
+
+end = time.time()
+sys.stdout.write("init_db.py -> " + str(end - start))
