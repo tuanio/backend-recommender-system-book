@@ -2,6 +2,7 @@ autopep8==1.6.0
 click==8.0.3
 colorama==0.4.4
 Flask==2.0.2
+Flask-Cors==3.0.10
 Flask-SQLAlchemy==2.5.1
 greenlet==1.1.2
 gunicorn==20.1.0
