@@ -31,6 +31,10 @@ class Genre(db.Model):
     book_genre = db.relationship("BookGenre", backref="genre")
     # genre_counts = db.relationship("GenreCount", backref="genre_counts", lazy=True)
 
+    def get_data(self):
+        just_get = ['id', 'kind']
+        return get_subset(self.__dict__, just_get)
+
     def __repr__(self):
         return "<Genre ({},{})>".format(self.id, self.kind)
 

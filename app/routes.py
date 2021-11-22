@@ -211,13 +211,60 @@ def get_all_user():
 def get_reading_list_history(user_id):
 
     try:
-        book_rating = BookRating.query.filter_by(user_id=user_id).with_entities(BookRating.book_id).all()
+        book_rating = BookRating.query.filter_by(
+            user_id=user_id).with_entities(BookRating.book_id).all()
         book_rating_ids = list(map(lambda x: x[0], book_rating))
 
-        list_book = list(map(lambda x: x.get_data(), Book.query.filter(Book.id.in_(book_rating_ids)).all()))
+        list_book = list(map(lambda x: x.get_data(), Book.query.filter(
+            Book.id.in_(book_rating_ids)).all()))
     except Exception as e:
         return make_response(make_data(dict(error=str(e)), msg="Return reading list history fail", status='FAILURE'))
 
     return make_response(make_data(dict(list_book=list_book), msg="Return reading list history successfully!"))
+
+
+@app.route('/api/get-all-authors', methods=['GET'])
+@cross_origin()
+def get_all_authors():
+    try:
+        list_authors = list(map(lambda x: x.get_data(), Author.query.all()))
+    except Exception as e:
+        return make_response(make_data(dict(error=str(e)), msg="Return list authors fail!", status='FAILURE'))
+
+    return make_response(make_data(dict(list_authors=list_authors), msg="Return list authors successfully!"))
+
+
+@app.route('/api/get-all-genres', methods=['GET'])
+@cross_origin()
+def get_all_genres():
+    try:
+        list_genres = list(map(lambda x: x.get_data(), Genre.query.all()))
+    except Exception as e:
+        return make_response(make_data(dict(error=str(e)), msg="Return list genres fail!", status='FAILURE'))
+
+    return make_response(make_data(dict(list_genres=list_genres), msg="Return list genres successfully!"))
+    
+
+@app.route('/api/get-list-books-by-author-genre/<int:author_id>/<int:genre_id>', methods=['GET'])
+@cross_origin()
+def get_list_books_by_author_genre(author_id: int, genre_id: int):
+    try:
+
+        list_book_id_1 = BookDetail.query.filter_by(author_id=author_id).with_entities(BookDetail.book_id).all()
+        list_book_id_1 = map(lambda x: x[0], list_book_id_1)
+
+        list_book_id_2 = BookGenre.query.filter_by(genre_id=genre_id).with_entities(BookGenre.book_id).all()
+        list_book_id_2 = map(lambda x: x[0], list_book_id_2)
+
+        list_match_book_ids = set(list_book_id_1) | set(list_book_id_2)
+
+        list_books = Book.query.filter(Book.id.in_(list_match_book_ids)).all()
+        list_books = list(map(lambda x: x.get_data(), list_books))
+        
+    except Exception as e:
+        return make_response(make_data(dict(error=str(e)), msg="Return list genres fail!", status='FAILURE'))
+
+    return make_response(make_data(dict(nums_books=len(list_books), list_books=list_books), msg="Return list genres successfully!"))
+
 
 # @app.route('/system/')
