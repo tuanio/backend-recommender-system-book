@@ -1,17 +1,21 @@
 from app import app, db, status_code
 from app.models import *
 from app.utils import make_response, make_data
+from flask import request
+from flask_cors import cross_origin
 from pprint import pprint
 import operator
 from sqlalchemy.sql import case
 
 
 @app.route('/', methods=['GET'])
+@cross_origin()
 def index():
     return make_response(dict(msg="Hello world"))
 
 
-@app.route('/api/get-book/<int:book_id>')
+@app.route('/api/get-book/<int:book_id>', methods=['GET'])
+@cross_origin()
 def get_book(book_id: int):
     '''
     return information of a book
@@ -34,7 +38,8 @@ def get_book(book_id: int):
     return make_response(make_data(data=ret_data, msg="Return a book successfully!"))
 
 
-@app.route('/api/update-count-author-genre/<int:user_id>/<int:book_id>')
+@app.route('/api/update-count-author-genre/<int:user_id>/<int:book_id>', methods=['PUT'])
+@cross_origin()
 def update_count_author_genre(user_id: int, book_id: int):
     '''
     update count for author and genre of a book
@@ -81,7 +86,8 @@ def update_count_author_genre(user_id: int, book_id: int):
     return make_response(make_data(msg="Update author and genre count successfully!"))
 
 
-@app.route('/api/get-book-similar/<int:book_id>')
+@app.route('/api/get-book-similar/<int:book_id>', methods=['GET'])
+@cross_origin()
 def get_book_similar(book_id: int):
     similar_books = BookDescriptionSimilarities.query.filter_by(
         book_id=book_id).all()
@@ -96,7 +102,8 @@ def get_book_similar(book_id: int):
     ))
 
 
-@app.route('/api/get-top-100-books')
+@app.route('/api/get-top-100-books', methods=['GET'])
+@cross_origin()
 def get_top_100_books():
     LIMIT_BOOKS = 100
     list_book_id = BookReview.query.order_by(
@@ -110,25 +117,43 @@ def get_top_100_books():
     return make_response(make_data(data=dict(list_book=list_book), msg="Return top 100 books"))
 
 
-@app.route('/api/update-user-rating/<int:user_id>/<int:book_id>/<int:user_rating>')
+@app.route('/api/update-user-rating/<int:user_id>/<int:book_id>/<int:user_rating>', methods=['PUT'])
+@cross_origin()
 def update_user_rating(user_id: int, book_id: int, user_rating: int):
-    book_rating = BookRating(
-        rating=user_rating, user_id=user_id, book_id=book_id)
-    db.session.add(book_rating)
+    try:
+        book_rating = BookRating.query.filter_by(
+            user_id=user_id, book_id=book_id).first()
+        assert book_rating  # check where is None
+        # nếu vượt qua cái assert thì nghĩa là có rồi, chỉ update lại thôi
+        if user_rating == 0:  # Lượt call mặc định
+            return make_response(make_data(msg="There's no change on this user rating"))
+        book_rating.rating = user_rating  # còn không thì cập nhật lại
+    except:
+        book_rating = BookRating(
+            rating=user_rating, user_id=user_id, book_id=book_id)
+        db.session.add(book_rating)
+
     db.session.commit()
     return make_response(make_data(msg="Update rating successfully!"))
 
 
-@app.route('/api/get-list-book-rated/<int:user_id>')
+@app.route('/api/get-list-book-rated/<int:user_id>', methods=['GET'])
+@cross_origin()
 def get_list_book_rated(user_id: int):
-    book_rating = BookRating.query.filter_by(user_id=user_id).with_entities(BookRating.book_id, BookRating.rating).all()
-    book_rated = list(map(lambda x: Book.query.filter(Book.id == x[0]).first().get_data(), book_rating))
-    for i, _ in enumerate(book_rated):
-        book_rated[i]['user_rating'] = book_rating[i][1]
+    try:
+        book_rating = BookRating.query.filter_by(user_id=user_id).filter_by(
+            rating > 0).with_entities(BookRating.book_id, BookRating.rating).all()
+        book_rated = list(map(lambda x: Book.query.filter(
+            Book.id == x[0]).first().get_data(), book_rating))
+        for i, _ in enumerate(book_rated):
+            book_rated[i]['user_rating'] = book_rating[i][1]
+    except Exception as e:
+        return make_response(make_data(data=dict(error=str(e)), msg="Return list book rated fail!", status='FAILURE'))
     return make_response(make_data(data=dict(list_books=book_rated), msg="Return list book rated successfully!"))
 
 
-@app.route('/api/update-favorite/<int:user_id>/<int:book_id>')
+@app.route('/api/update-favorite/<int:user_id>/<int:book_id>', methods=['PUT'])
+@cross_origin()
 def update_favorite(user_id: int, book_id: int):
     try:
         msg = "Update book favorite successfully!"
@@ -145,7 +170,8 @@ def update_favorite(user_id: int, book_id: int):
     return make_response(make_data(msg=msg))
 
 
-@app.route('/api/get-book-favorited/<int:user_id>')
+@app.route('/api/get-book-favorited/<int:user_id>', methods=['GET'])
+@cross_origin()
 def get_book_favorited(user_id: int):
     favorited_book_ids = list(map(lambda x: x[0], BookFavorite.query.filter_by(
         user_id=user_id, is_favorite=True).with_entities(BookFavorite.book_id).all()))
@@ -153,5 +179,45 @@ def get_book_favorited(user_id: int):
     ), Book.query.filter(Book.id.in_(favorited_book_ids)).all()))[::-1]
     return make_response(make_data(data=dict(list_books=favorited_books), msg="Return favorited book sucessfully!"))
 
+
+@app.route('/api/test/create-mock-user', methods=['POST'])
+@cross_origin()
+def create_mock_user():
+
+    try:
+        data = request.get_json(force=True)
+        db.session.add(User(**data))
+        db.session.commit()
+    except Exception as e:
+        return make_response(make_data(dict(error=str(e)), msg="Create user fail!", status='FAILURE'))
+
+    return make_response(make_data(msg="Create user successfully!"))
+
+
+@app.route('/api/get-all-user', methods=['GET'])
+@cross_origin()
+def get_all_user():
+
+    try:
+        list_users = list(map(lambda x: x.get_data(), User.query.all()))
+    except Exception as e:
+        return make_response(make_data(dict(error=str(e)), msg="Return list user fail", status='FAILURE'))
+
+    return make_response(make_data(dict(list_users=list_users), msg="Return list user successfully!"))
+
+
+@app.route('/api/get-reading-list-history/<int:user_id>', methods=['GET'])
+@cross_origin()
+def get_reading_list_history(user_id):
+
+    try:
+        book_rating = BookRating.query.filter_by(user_id=user_id).with_entities(BookRating.book_id).all()
+        book_rating_ids = list(map(lambda x: x[0], book_rating))
+
+        list_book = list(map(lambda x: x.get_data(), Book.query.filter(Book.id.in_(book_rating_ids)).all()))
+    except Exception as e:
+        return make_response(make_data(dict(error=str(e)), msg="Return reading list history fail", status='FAILURE'))
+
+    return make_response(make_data(dict(list_book=list_book), msg="Return reading list history successfully!"))
 
 # @app.route('/system/')

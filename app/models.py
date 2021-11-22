@@ -170,6 +170,10 @@ class User(db.Model):
         "AuthorCount", backref="author_counts", lazy=True)
     genre_counts = db.relationship("GenreCount", backref="genre_counts")
 
+    def get_data(self):
+        just_get = ['id', 'uid', 'user_name', 'user_email']
+        return get_subset(self.__dict__, just_get)
+
     def __repr__(self):
         return "<User({},{},{},{})>".format(self.id, self.uid, self.user_name, self.user_email)
 
