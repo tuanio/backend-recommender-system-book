@@ -93,10 +93,10 @@ def get_book_similar(book_id: int):
         book_id=book_id).all()
     similar_books = list(map(lambda x: x.book_recommend_id, similar_books))
     similar_books = list(map(lambda x: Book.query.filter_by(
-        id=x).first().get_data(), similar_books))
+        id=x).first().get_data(cols=['id', 'image_url']), similar_books))
 
     return make_response(dict(
-        data=similar_books,
+        data=dict(list_books=similar_books),
         msg="Return top 10 book successfully!",
         status_code=status_code['SUCCESS']
     ))

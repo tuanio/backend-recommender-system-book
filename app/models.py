@@ -74,9 +74,12 @@ class Book(db.Model):
         "BookDescriptionSimilarities", backref="book_description", lazy=True)
     # book_rating = db.relationship("BookRating",backref="book_rating", lazy=True)
 
-    def get_data(self):
-        just_get = ['id', 'isbn', 'isbn13', 'title',
-                    'desc', 'pages', 'image_url', 'book_url']
+    def get_data(self, cols=None):
+        if not cols:
+            just_get = ['id', 'isbn', 'isbn13', 'title',
+                        'desc', 'pages', 'image_url', 'book_url']
+        else:
+            just_get = cols
         return get_subset(self.__dict__, just_get)
 
     def __repr__(self):

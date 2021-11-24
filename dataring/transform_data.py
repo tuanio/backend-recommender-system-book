@@ -10,6 +10,7 @@ from app import db
 from app.utils import cleanup, write
 from app.models import *
 from app.dto import BookDto
+import concurrent.futures as cf
 import pandas as pd
 import numpy as np
 import re
@@ -29,7 +30,8 @@ authors_name = [name.strip() for au in authors_name for name in au.split(',') if
 
 authors_name = set(authors_name)
 
-authors_list = [Author(full_name=v) for v in authors_name]
+with cf.ThreadPoolExecutor() as executor:
+    authors_list = list(executor.map(lambda v: Author(full_name=v), authors_name))
 
 db.session.bulk_save_objects(authors_list)
 db.session.commit()
@@ -45,7 +47,9 @@ genre_unique = master_file['genre'].unique()
 genre = [g for i in genre_unique for g in str(i).split(',')]
 genre = set(genre)
 
-list_genre = [Genre(kind=v) for v in genre]
+with cf.ThreadPoolExecutor() as executor:
+    list_genre = list(executor.map(lambda v: Genre(kind=v), genre))
+
 db.session.bulk_save_objects(list_genre)
 db.session.commit()
 
@@ -62,7 +66,8 @@ book_format = [str(bf) for bf in book_format_unique
 
 book_format = set(book_format)
 
-list_book = [BookFormat(type_=v) for v in book_format]
+with cf.ThreadPoolExecutor() as executor:
+    list_book = list(executor.map(lambda v: BookFormat(type_=v), book_format))
 db.session.bulk_save_objects(list_book)
 db.session.commit()
 
@@ -78,8 +83,8 @@ table_temp = master_file[['isbn', 'isbn13',
 table_temp.columns = ['isbn', 'isbn13', 'title',
                       'desc', 'pages', 'image_url', 'book_url']
 
-list_books = [Book(**BookDto(**dict(table_temp.iloc[i, :])).dict())
-              for i in range(table_temp.shape[0])]
+with cf.ThreadPoolExecutor() as executor:
+    list_books = list(executor.map(lambda i: Book(**BookDto(**dict(table_temp.iloc[i, :])).dict()), range(table_temp.shape[0])))
 
 db.session.bulk_save_objects(list_books)
 db.session.commit()
@@ -97,8 +102,8 @@ book_review.columns = ['rating', 'reviews', 'total_ratings']
 
 book_review.loc[:, 'book_id'] = book_id
 
-book_review_list = [BookReview(**dict(book_review.iloc[i, :]))
-                    for i in range(book_review.shape[0])]
+with cf.ThreadPoolExecutor() as executor:
+    book_review_list = list(executor.map(lambda i: BookReview(**dict(book_review.iloc[i, :])), range(book_review.shape[0])))
 
 db.session.bulk_save_objects(book_review_list)
 db.session.commit()
@@ -108,7 +113,6 @@ write("""
 Table BOOK_DETAIL
 
 """)
-
 
 def getAuthorId(full_name):
     """
@@ -147,9 +151,7 @@ db.session.bulk_save_objects(list_book_detail)
 db.session.commit()
 
 write("""
-
 Table BOOK_GENRE
-
 """)
 
 
@@ -189,9 +191,7 @@ db.session.bulk_save_objects(list_genre)
 db.session.commit()
 
 write("""
-
 Table BOOK_FORMAT_DETAIL
-
 """)
 
 
