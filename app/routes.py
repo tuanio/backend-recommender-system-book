@@ -126,7 +126,7 @@ def get_top_100_books():
 
     for idx, book in enumerate(list_book_data):
         list_book[idx]['weighted_rating'] = book[1]
-        
+
     return make_response(make_data(data=dict(list_book=list_book), msg="Return top 100 books"))
 
 
@@ -339,10 +339,12 @@ def get_list_book_recommend_by_author(user_id: int):
         recommend_info_origin[idx].author_weight = y_pred[idx]
     db.session.commit()
 
-    list_book_final = [book_id for weight, book_id in sorted(zip(y_pred, list_book_id), reverse=True, key=lambda x: x[0])]
+    list_book_final = [book_id for weight, book_id in sorted(
+        zip(y_pred, list_book_id), reverse=True, key=lambda x: x[0])]
 
     list_book = Book.query.filter(Book.id.in_(list_book_final)).all()
-    list_book = list(map(lambda x: x.get_data(['id', 'image_url']), list_book))[:LIMIT_BOOK]
+    list_book = list(map(lambda x: x.get_data(['id', 'image_url']), list_book))[
+        :LIMIT_BOOK]
 
     return make_response(make_data(dict(list_book=list_book, score=score), msg="OK"))
 
@@ -383,12 +385,15 @@ def get_list_book_recommend_by_genre(user_id: int):
         recommend_info_origin[idx].genre_weight = y_pred[idx]
     db.session.commit()
 
-    list_book_final = [book_id for weight, book_id in sorted(zip(y_pred, list_book_id), reverse=True, key=lambda x: x[0])][:LIMIT_BOOK]
-    weight_final = [(weight, book_id) for weight, book_id in sorted(zip(y_pred, list_book_id), reverse=True, key=lambda x: x[0])][:LIMIT_BOOK]
+    list_book_final = [book_id for weight, book_id in sorted(
+        zip(y_pred, list_book_id), reverse=True, key=lambda x: x[0])][:LIMIT_BOOK]
+    weight_final = [(weight, book_id) for weight, book_id in sorted(
+        zip(y_pred, list_book_id), reverse=True, key=lambda x: x[0])][:LIMIT_BOOK]
 
     print(list_book_final)
 
     list_book = Book.query.filter(Book.id.in_(list_book_final)).all()
-    list_book = list(map(lambda x: x.get_data(['id', 'image_url', 'title']), list_book))
+    list_book = list(map(lambda x: x.get_data(
+        ['id', 'image_url', 'title']), list_book))
 
     return make_response(make_data(dict(list_book=list_book, score=score), msg="OK"))
