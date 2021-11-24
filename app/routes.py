@@ -249,7 +249,7 @@ def create_user():
     return make_response(make_data(msg="Create user successfully!"))
 
 
-@app.route('/api/get-all-user', methods=['GET'])
+@app.route('/api/get-all-users', methods=['GET'])
 @cross_origin()
 def get_all_user():
 
@@ -304,6 +304,8 @@ def get_all_genres():
 @app.route('/api/get-list-books-by-author-genre/<int:author_id>/<int:genre_id>', methods=['GET'])
 @cross_origin()
 def get_list_books_by_author_genre(author_id: int, genre_id: int):
+    LIMIT_BOOK = 30
+
     try:
 
         list_book_id_1 = BookDetail.query.filter_by(
@@ -317,7 +319,8 @@ def get_list_books_by_author_genre(author_id: int, genre_id: int):
         list_match_book_ids = set(list_book_id_1) | set(list_book_id_2)
 
         list_books = Book.query.filter(Book.id.in_(list_match_book_ids)).all()
-        list_books = list(map(lambda x: x.get_data(), list_books))
+        list_books = list(map(lambda x: x.get_data(cols=['id', 'image_url', 'title']), list_books))
+        list_books = list_books[:LIMIT_BOOK]
 
     except Exception as e:
         return make_response(make_data(dict(error=str(e)), msg="Return list genres fail!", status='FAILURE'))
@@ -328,7 +331,7 @@ def get_list_books_by_author_genre(author_id: int, genre_id: int):
 @app.route('/api/get-list-book-recommend-by-author/<int:user_id>', methods=['GET'])
 @cross_origin()
 def get_list_book_recommend_by_author(user_id: int):
-    LIMIT_BOOK = 100
+    LIMIT_BOOK = 30
 
     try:
         X = np.load('data/author_features.npy')
@@ -377,7 +380,7 @@ def get_list_book_recommend_by_author(user_id: int):
 @app.route('/api/get-list-book-recommend-by-genre/<int:user_id>', methods=['GET'])
 @cross_origin()
 def get_list_book_recommend_by_genre(user_id: int):
-    LIMIT_BOOK = 100
+    LIMIT_BOOK = 30
 
     try:
         X = np.load('data/genre_features.npy')
@@ -417,8 +420,6 @@ def get_list_book_recommend_by_genre(user_id: int):
         weight_final = [(weight, book_id) for weight, book_id in sorted(
             zip(y_pred, list_book_id), reverse=True, key=lambda x: x[0])][:LIMIT_BOOK]
 
-        print(list_book_final)
-
         list_book = Book.query.filter(Book.id.in_(list_book_final)).all()
         list_book = list(map(lambda x: x.get_data(
             ['id', 'image_url', 'title']), list_book))
@@ -430,7 +431,7 @@ def get_list_book_recommend_by_genre(user_id: int):
 
 @app.route('/api/get-some-book-similar-at-all/<int:user_id>', methods=['GET'])
 def get_some_book_similar_at_all(user_id: int):
-    LIMIT_BOOK = 100
+    LIMIT_BOOK = 30
 
     try:
         book_similar_id = BookRating.query.filter_by(
