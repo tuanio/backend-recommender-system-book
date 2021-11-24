@@ -29,19 +29,31 @@ def get_book(book_id: int):
     return information of a book
     # thiếu genre
     '''
-    book = Book.query.filter_by(id=book_id).first().get_data()
+    try:
+        book = Book.query.filter_by(id=book_id).first().get_data()
 
-    author_ids = list(map(lambda x: x.author_id,
-                      BookDetail.query.filter_by(book_id=book_id).all()))
-    authors_names = list(map(lambda x: x.get_data(),
-                         Author.query.filter(Author.id.in_(author_ids)).all()))
+        author_ids = list(map(lambda x: x.author_id,
+                              BookDetail.query.filter_by(book_id=book_id).all()))
+        
+        authors_names = Author.query.filter(Author.id.in_(author_ids)).all()
+        authors_names = list(map(lambda x: x.get_data(['full_name'])['full_name'], authors_names))
 
-    book_review = BookReview.query.filter_by(
-        book_id=book_id).first().get_data()
+        book_review = BookReview.query.filter_by(
+            book_id=book_id).first().get_data()
 
-    ret_data = book
-    ret_data.update(book_review)
-    ret_data['authors'] = authors_names
+        book_genre_id = BookGenre.query.filter_by(
+            book_id=book['id']).with_entities(BookGenre.genre_id).all()
+        book_genre_id = list(map(lambda x: x[0], book_genre_id))
+
+        genres = Genre.query.filter(Genre.id.in_(book_genre_id)).all()
+        genres = list(map(lambda x: x.get_data(['kind'])['kind'], genres))
+
+        ret_data = book
+        ret_data.update(book_review)
+        ret_data['authors'] = authors_names
+        ret_data['genres'] = genres
+    except Exception as e:
+        return make_response(make_data(dict(error=str(e)), msg="Return a book fail!", status='FAILURE'))
 
     return make_response(make_data(data=ret_data, msg="Return a book successfully!"))
 
@@ -52,44 +64,47 @@ def update_count_author_genre(user_id: int, book_id: int):
     '''
     update count for author and genre of a book
     '''
-    author_ids = list(map(lambda x: x[0], BookDetail.query.filter_by(
-        book_id=book_id).with_entities(BookDetail.author_id).all()))
-
-    # update data author count
     try:
-        # when author already have
-        author_count = AuthorCount.query.filter(
-            AuthorCount.user_id == user_id,
-            AuthorCount.author_id.in_(author_ids)
-        ).all()
-        assert author_count
-        for auth in author_count:
-            auth.numbers_counts += 1
-    except:
-        # when not row queried
-        list_author_count = list(map(lambda auth_id: AuthorCount(
-            user_id=user_id, author_id=auth_id), author_ids))
-        db.session.bulk_save_objects(list_author_count)
+        author_ids = list(map(lambda x: x[0], BookDetail.query.filter_by(
+            book_id=book_id).with_entities(BookDetail.author_id).all()))
 
-    # update data genre count
-    genre_ids = list(map(lambda x: x[0], BookGenre.query.filter_by(
-        book_id=book_id).with_entities(BookGenre.genre_id).all()))
-    try:
-        # when author already have
-        genre_count = GenreCount.query.filter(
-            GenreCount.user_id == user_id,
-            GenreCount.genre_id.in_(genre_ids)
-        ).all()
-        assert genre_count
-        for genre in genre_count:
-            genre.numbers_counts += 1
-    except:
-        # when not row queried
-        list_genre_count = list(map(lambda genre_id: GenreCount(
-            user_id=user_id, genre_id=genre_id), genre_ids))
-        db.session.bulk_save_objects(list_genre_count)
+        # update data author count
+        try:
+            # when author already have
+            author_count = AuthorCount.query.filter(
+                AuthorCount.user_id == user_id,
+                AuthorCount.author_id.in_(author_ids)
+            ).all()
+            assert author_count
+            for auth in author_count:
+                auth.numbers_counts += 1
+        except:
+            # when not row queried
+            list_author_count = list(map(lambda auth_id: AuthorCount(
+                user_id=user_id, author_id=auth_id), author_ids))
+            db.session.bulk_save_objects(list_author_count)
 
-    db.session.commit()
+        # update data genre count
+        genre_ids = list(map(lambda x: x[0], BookGenre.query.filter_by(
+            book_id=book_id).with_entities(BookGenre.genre_id).all()))
+        try:
+            # when author already have
+            genre_count = GenreCount.query.filter(
+                GenreCount.user_id == user_id,
+                GenreCount.genre_id.in_(genre_ids)
+            ).all()
+            assert genre_count
+            for genre in genre_count:
+                genre.numbers_counts += 1
+        except:
+            # when not row queried
+            list_genre_count = list(map(lambda genre_id: GenreCount(
+                user_id=user_id, genre_id=genre_id), genre_ids))
+            db.session.bulk_save_objects(list_genre_count)
+
+        db.session.commit()
+    except Exception as e:
+        return make_response(make_data(dict(error=str(e)), msg="Update author and genre count fail!", status='FAILURE'))
 
     return make_response(make_data(msg="Update author and genre count successfully!"))
 
@@ -97,37 +112,40 @@ def update_count_author_genre(user_id: int, book_id: int):
 @app.route('/api/get-book-similar/<int:book_id>', methods=['GET'])
 @cross_origin()
 def get_book_similar(book_id: int):
-    similar_books = BookDescriptionSimilarities.query.filter_by(
-        book_id=book_id).all()
-    similar_books = list(map(lambda x: x.book_recommend_id, similar_books))
-    similar_books = list(map(lambda x: Book.query.filter_by(
-        id=x).first().get_data(cols=['id', 'image_url']), similar_books))
+    try:
+        similar_books = BookDescriptionSimilarities.query.filter_by(
+            book_id=book_id).all()
+        similar_books = list(map(lambda x: x.book_recommend_id, similar_books))
+        similar_books = list(map(lambda x: Book.query.filter_by(
+            id=x).first().get_data(cols=['id', 'image_url']), similar_books))
+    except Exception as e:
+        return make_response(make_data(dict(error=str(e)), msg="Return top 10 book similar fail!", status='FAILURE'))
 
-    return make_response(dict(
-        data=dict(list_books=similar_books),
-        msg="Return top 10 book successfully!",
-        status_code=status_code['SUCCESS']
-    ))
+    return make_response(make_data(dict(list_books=similar_books), msg="Return top 10 book similar successfully!"))
 
 
 @app.route('/api/get-top-100-books', methods=['GET'])
 @cross_origin()
 def get_top_100_books():
     LIMIT_BOOKS = 100
-    list_book_data = BookReview.query.order_by(
-        BookReview.weighted_rating.desc()
-    ).with_entities(
-        BookReview.book_id,
-        BookReview.weighted_rating
-    ).limit(LIMIT_BOOKS).all()
-    list_book_id = map(lambda x: x[0], list_book_data)
-    list_book = list(map(lambda x: x.get_data(
-        cols=['id', 'image_url', 'title']), Book.query.filter(Book.id.in_(list_book_id)).all()))
 
-    for idx, book in enumerate(list_book_data):
-        list_book[idx]['weighted_rating'] = book[1]
+    try:
+        list_book_data = BookReview.query.order_by(
+            BookReview.weighted_rating.desc()
+        ).with_entities(
+            BookReview.book_id,
+            BookReview.weighted_rating
+        ).limit(LIMIT_BOOKS).all()
+        list_book_id = map(lambda x: x[0], list_book_data)
+        list_book = list(map(lambda x: x.get_data(
+            cols=['id', 'image_url', 'title']), Book.query.filter(Book.id.in_(list_book_id)).all()))
 
-    return make_response(make_data(data=dict(list_book=list_book), msg="Return top 100 books"))
+        for idx, book in enumerate(list_book_data):
+            list_book[idx]['weighted_rating'] = book[1]
+    except Exception as e:
+        return make_response(make_data(dict(error=str(e)), msg="Return top 100 books fail!", status='FAILURE'))
+
+    return make_response(make_data(data=dict(list_book=list_book), msg="Return top 100 books successfully!"))
 
 
 @app.route('/api/update-user-rating/<int:user_id>/<int:book_id>/<int:user_rating>', methods=['PUT'])
@@ -187,10 +205,14 @@ def update_favorite(user_id: int, book_id: int):
 @app.route('/api/get-book-favorited/<int:user_id>', methods=['GET'])
 @cross_origin()
 def get_book_favorited(user_id: int):
-    favorited_book_ids = list(map(lambda x: x[0], BookFavorite.query.filter_by(
-        user_id=user_id, is_favorite=True).with_entities(BookFavorite.book_id).all()))
-    favorited_books = list(map(lambda x: x.get_data(
-        cols=['id', 'image_url']), Book.query.filter(Book.id.in_(favorited_book_ids)).all()))[::-1]
+    try:
+        favorited_book_ids = list(map(lambda x: x[0], BookFavorite.query.filter_by(
+            user_id=user_id, is_favorite=True).with_entities(BookFavorite.book_id).all()))
+        favorited_books = list(map(lambda x: x.get_data(
+            cols=['id', 'image_url']), Book.query.filter(Book.id.in_(favorited_book_ids)).all()))[::-1]
+    except Exception as e:
+        return make_response(make_data(dict(error=str(e)), msg="Return favorited book fail!", status='FAILURE'))
+
     return make_response(make_data(data=dict(list_books=favorited_books), msg="Return favorited book sucessfully!"))
 
 
@@ -306,94 +328,131 @@ def get_list_books_by_author_genre(author_id: int, genre_id: int):
 @app.route('/api/get-list-book-recommend-by-author/<int:user_id>', methods=['GET'])
 @cross_origin()
 def get_list_book_recommend_by_author(user_id: int):
-    LIMIT_BOOK = 20
+    LIMIT_BOOK = 100
 
-    X = np.load('data/author_features.npy')
-    recommend_info_origin = RecommendInformation.query.filter_by(
-        user_id=user_id).all()
+    try:
+        X = np.load('data/author_features.npy')
+        recommend_info_origin = RecommendInformation.query.filter_by(
+            user_id=user_id).all()
 
-    list_book_id = list(map(lambda x: x.book_id, recommend_info_origin))
+        list_book_id = list(map(lambda x: x.book_id, recommend_info_origin))
 
-    user_rating_list = BookRating.query.filter(
-        and_(BookRating.user_id == user_id, BookRating.rating > 0)).all()
+        user_rating_list = BookRating.query.filter(
+            and_(BookRating.user_id == user_id, BookRating.rating > 0)).all()
 
-    update_rating = {user.book_id: user.rating for user in user_rating_list}
+        update_rating = {
+            user.book_id: user.rating for user in user_rating_list}
 
-    recommend_info = list(map(lambda x: x.get_data(
-        ['book_id', 'author_weight']), recommend_info_origin))
+        recommend_info = list(map(lambda x: x.get_data(
+            ['book_id', 'author_weight']), recommend_info_origin))
 
-    for idx, info in enumerate(recommend_info):
-        rated = update_rating.get(info['book_id'], None)
-        if rated:
-            info['author_weight'] = rated
+        for idx, info in enumerate(recommend_info):
+            rated = update_rating.get(info['book_id'], None)
+            if rated:
+                info['author_weight'] = rated
 
-    y = list(map(lambda x: x['author_weight'], recommend_info))
+        y = list(map(lambda x: x['author_weight'], recommend_info))
 
-    model = Ridge(alpha=1e-5, random_state=12)
-    model.fit(X, y)
+        model = Ridge(alpha=1e-5, random_state=12)
+        model.fit(X, y)
 
-    y_pred = model.predict(X).tolist()
-    score = model.score(X, y)
+        y_pred = model.predict(X).tolist()
 
-    for idx in range(len(recommend_info_origin)):
-        recommend_info_origin[idx].author_weight = y_pred[idx]
-    db.session.commit()
+        for idx in range(len(recommend_info_origin)):
+            recommend_info_origin[idx].author_weight = y_pred[idx]
+        db.session.commit()
 
-    list_book_final = [book_id for weight, book_id in sorted(
-        zip(y_pred, list_book_id), reverse=True, key=lambda x: x[0])]
+        list_book_final = [book_id for weight, book_id in sorted(
+            zip(y_pred, list_book_id), reverse=True, key=lambda x: x[0])]
 
-    list_book = Book.query.filter(Book.id.in_(list_book_final)).all()
-    list_book = list(map(lambda x: x.get_data(['id', 'image_url']), list_book))[
-        :LIMIT_BOOK]
+        list_book = Book.query.filter(Book.id.in_(list_book_final)).all()
+        list_book = list(map(lambda x: x.get_data(['id', 'image_url']), list_book))[
+            :LIMIT_BOOK]
+    except Exception as e:
+        return make_response(make_data(dict(error=str(e)), msg="Return list recommend books by author fail!", status='FAILURE'))
 
-    return make_response(make_data(dict(list_book=list_book, score=score), msg="OK"))
+    return make_response(make_data(dict(list_book=list_book), msg="Return list recommend books by author successfully!"))
 
 
 @app.route('/api/get-list-book-recommend-by-genre/<int:user_id>', methods=['GET'])
 @cross_origin()
 def get_list_book_recommend_by_genre(user_id: int):
-    LIMIT_BOOK = 20
+    LIMIT_BOOK = 100
 
-    X = np.load('data/genre_features.npy')
-    recommend_info_origin = RecommendInformation.query.filter_by(
-        user_id=user_id).all()
+    try:
+        X = np.load('data/genre_features.npy')
+        recommend_info_origin = RecommendInformation.query.filter_by(
+            user_id=user_id).all()
 
-    list_book_id = list(map(lambda x: x.book_id, recommend_info_origin))
+        list_book_id = list(map(lambda x: x.book_id, recommend_info_origin))
 
-    user_rating_list = BookRating.query.filter(
-        and_(BookRating.user_id == user_id, BookRating.rating > 0)).all()
+        user_rating_list = BookRating.query.filter(
+            and_(BookRating.user_id == user_id, BookRating.rating > 0)).all()
 
-    update_rating = {user.book_id: user.rating for user in user_rating_list}
+        update_rating = {
+            user.book_id: user.rating for user in user_rating_list}
 
-    recommend_info = list(map(lambda x: x.get_data(
-        ['book_id', 'genre_weight']), recommend_info_origin))
+        recommend_info = list(map(lambda x: x.get_data(
+            ['book_id', 'genre_weight']), recommend_info_origin))
 
-    for idx, info in enumerate(recommend_info):
-        rated = update_rating.get(info['book_id'], None)
-        if rated:
-            info['genre_weight'] = rated
+        for idx, info in enumerate(recommend_info):
+            rated = update_rating.get(info['book_id'], None)
+            if rated:
+                info['genre_weight'] = rated
 
-    y = list(map(lambda x: x['genre_weight'], recommend_info))
+        y = list(map(lambda x: x['genre_weight'], recommend_info))
 
-    model = DecisionTreeRegressor(random_state=12)
-    model.fit(X, y)
+        model = DecisionTreeRegressor(random_state=12)
+        model.fit(X, y)
 
-    y_pred = model.predict(X).tolist()
-    score = model.score(X, y)
+        y_pred = model.predict(X).tolist()
+        score = model.score(X, y)
 
-    for idx in range(len(recommend_info_origin)):
-        recommend_info_origin[idx].genre_weight = y_pred[idx]
-    db.session.commit()
+        for idx in range(len(recommend_info_origin)):
+            recommend_info_origin[idx].genre_weight = y_pred[idx]
+        db.session.commit()
 
-    list_book_final = [book_id for weight, book_id in sorted(
-        zip(y_pred, list_book_id), reverse=True, key=lambda x: x[0])][:LIMIT_BOOK]
-    weight_final = [(weight, book_id) for weight, book_id in sorted(
-        zip(y_pred, list_book_id), reverse=True, key=lambda x: x[0])][:LIMIT_BOOK]
+        list_book_final = [book_id for weight, book_id in sorted(
+            zip(y_pred, list_book_id), reverse=True, key=lambda x: x[0])][:LIMIT_BOOK]
+        weight_final = [(weight, book_id) for weight, book_id in sorted(
+            zip(y_pred, list_book_id), reverse=True, key=lambda x: x[0])][:LIMIT_BOOK]
 
-    print(list_book_final)
+        print(list_book_final)
 
-    list_book = Book.query.filter(Book.id.in_(list_book_final)).all()
-    list_book = list(map(lambda x: x.get_data(
-        ['id', 'image_url', 'title']), list_book))
+        list_book = Book.query.filter(Book.id.in_(list_book_final)).all()
+        list_book = list(map(lambda x: x.get_data(
+            ['id', 'image_url', 'title']), list_book))
+    except Exception as e:
+        return make_response(make_data(dict(error=str(e)), msg="Return list recommend books by genre fail!", status='FAILURE'))
 
-    return make_response(make_data(dict(list_book=list_book, score=score), msg="OK"))
+    return make_response(make_data(dict(list_book=list_book), msg="Return list recommend books by genre successfully!"))
+
+
+@app.route('/api/get-some-book-similar-at-all/<int:user_id>', methods=['GET'])
+def get_some_book_similar_at_all(user_id: int):
+    LIMIT_BOOK = 100
+
+    try:
+        book_similar_id = BookRating.query.filter_by(
+            user_id=user_id).with_entities(BookRating.book_id).all()
+        book_similar_id = list(map(lambda x: x[0], book_similar_id))
+
+        book_similar_id = BookDescriptionSimilarities.query.filter(
+            BookDescriptionSimilarities.book_id.in_(book_similar_id)
+        ).with_entities(
+            BookDescriptionSimilarities.book_recommend_id
+        ).all()
+
+        book_similar_id = list(map(lambda x: x[0], book_similar_id))
+
+        # choose random min(LIMIT_BOOK, len(book_similar_id))
+        book_similar_id = np.random.choice(
+            book_similar_id, size=min(LIMIT_BOOK, len(book_similar_id)))
+
+        list_book = Book.query.filter(Book.id.in_(book_similar_id)).all()
+        list_book = list(map(lambda x: x.get_data(
+            ['id', 'image_url', 'title']), list_book))
+    except Exception as e:
+        return make_response(make_data(dict(error=str(e)), msg="Return top similar book fail!", status='FAILURE'))
+
+    return make_response(make_data(dict(list_book=list_book), msg="Return top similar book successfully!"))

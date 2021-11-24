@@ -15,8 +15,11 @@ class Author(db.Model):
     book_detail = db.relationship("BookDetail", backref="author", lazy=True)
     # author_counts = db.relationship("AuthorCount", backref="author_counts", lazy=True)
 
-    def get_data(self):
-        just_get = ['id', 'full_name']
+    def get_data(self, cols=None):
+        if not cols:
+            just_get = ['id', 'full_name']
+        else:
+            just_get = cols
         return get_subset(self.__dict__, just_get)
 
     def __repr__(self):
@@ -31,8 +34,11 @@ class Genre(db.Model):
     book_genre = db.relationship("BookGenre", backref="genre")
     # genre_counts = db.relationship("GenreCount", backref="genre_counts", lazy=True)
 
-    def get_data(self):
-        just_get = ['id', 'kind']
+    def get_data(self, cols=None):
+        if not cols:
+            just_get = ['id', 'kind']
+        else:
+            just_get = cols
         return get_subset(self.__dict__, just_get)
 
     def __repr__(self):
