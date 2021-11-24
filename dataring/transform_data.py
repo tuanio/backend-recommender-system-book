@@ -5,24 +5,22 @@ Author: Pham Thinh 👋
 Contact: github.com/Thinh127
 """
 
-from os import replace
+import os
+import re
 from app import db
-from app.utils import cleanup, write
+import numpy as np
+import pandas as pd
 from app.models import *
 from app.dto import BookDto
+from app.utils import cleanup, write
 import concurrent.futures as cf
-import pandas as pd
-import numpy as np
-import re
+
+cwd = ''
 
 # load data
-master_file = pd.read_csv('../notebooks/50_genre_800_author_wr_gt_4.csv')
+master_file = pd.read_csv(cwd + 'notebooks/50_genre_800_author_wr_gt_4.csv')
 
-write("""
-
-Table AUTHORS
-
-""")
+write("Table AUTHORS")
 
 authors_name = master_file['author'].unique()  # get unique name of authors
 
@@ -36,11 +34,7 @@ with cf.ThreadPoolExecutor() as executor:
 db.session.bulk_save_objects(authors_list)
 db.session.commit()
 
-write("""
-
-Table GENRE
-
-""")
+write("Table GENRE")
 
 genre_unique = master_file['genre'].unique()
 
@@ -53,11 +47,7 @@ with cf.ThreadPoolExecutor() as executor:
 db.session.bulk_save_objects(list_genre)
 db.session.commit()
 
-write("""
-
-TABLE BOOK_FORMAT
-
-""")
+write("TABLE BOOK_FORMAT")
 
 book_format_unique = master_file['bookformat'].unique()
 
@@ -71,11 +61,7 @@ with cf.ThreadPoolExecutor() as executor:
 db.session.bulk_save_objects(list_book)
 db.session.commit()
 
-write("""
-
-Table BOOK
-
-""")
+write("Table BOOK")
 
 table_temp = master_file[['isbn', 'isbn13',
                           'title', 'desc', 'pages', 'img', 'link']].copy()
@@ -89,16 +75,12 @@ with cf.ThreadPoolExecutor() as executor:
 db.session.bulk_save_objects(list_books)
 db.session.commit()
 
-write("""
-
-Table BOOK_REVIEW
-
-""")
+write("Table BOOK_REVIEW")
 
 book_id = np.arange(1, master_file.shape[0]+1)
-book_review = master_file[['rating', 'reviews', 'totalratings']]
+book_review = master_file[['rating', 'reviews', 'totalratings', 'weighted_rating']]
 
-book_review.columns = ['rating', 'reviews', 'total_ratings']
+book_review.columns = ['rating', 'reviews', 'total_ratings', 'weighted_rating']
 
 book_review.loc[:, 'book_id'] = book_id
 
@@ -108,11 +90,7 @@ with cf.ThreadPoolExecutor() as executor:
 db.session.bulk_save_objects(book_review_list)
 db.session.commit()
 
-write("""
-
-Table BOOK_DETAIL
-
-""")
+write("Table BOOK_DETAIL")
 
 def getAuthorId(full_name):
     """
@@ -150,9 +128,7 @@ list_book_detail = [BookDetail(book_id=bo_id, author_id=au_id)
 db.session.bulk_save_objects(list_book_detail)
 db.session.commit()
 
-write("""
-Table BOOK_GENRE
-""")
+write("Table BOOK_GENRE")
 
 
 def getGenreId(genre):
@@ -190,9 +166,7 @@ list_genre = [BookGenre(book_id=bo_id, genre_id=gen_id)
 db.session.bulk_save_objects(list_genre)
 db.session.commit()
 
-write("""
-Table BOOK_FORMAT_DETAIL
-""")
+write("Table BOOK_FORMAT_DETAIL")
 
 
 def getFormatId(format):
@@ -232,11 +206,9 @@ list_format_detail = [BookFormatDetail(
 db.session.bulk_save_objects(list_format_detail)
 db.session.commit()
 
-write("""
-Table BOOK_RECOMMEND
-""")
+write("Table BOOK_RECOMMEND")
 
-recommend = pd.read_json('..\\notebooks\\book_descriptions_recommend_data.json') # json file storing book recommend by book id
+recommend = pd.read_json(cwd + 'notebooks/book_descriptions_recommend_data.json') # json file storing book recommend by book id
 
 BOOK_RECOMMEND = {'book_id': [], 'list_books': []}
 
@@ -251,6 +223,8 @@ list_book_remmend = [BookDescriptionSimilarities(book_id=bo_id, book_recommend_i
 
 db.session.bulk_save_objects(list_book_remmend)
 db.session.commit()
+
+
 
 # Close connection when done
 cleanup(db.session)

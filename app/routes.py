@@ -1,11 +1,19 @@
-from app import app, db, status_code
-from app.models import *
-from app.utils import make_response, make_data
-from flask import request
-from flask_cors import cross_origin
 from pprint import pprint
-import operator
-from sqlalchemy.sql import case
+from flask import request
+import concurrent.futures as cf
+from flask_cors import cross_origin
+from app.models import *
+from app import app, db, status_code
+from app.utils import make_response, make_data
+from sqlalchemy.orm import load_only
+from sqlalchemy import and_
+from sklearn.linear_model import Ridge
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.neural_network import MLPRegressor
+from sklearn.metrics import mean_squared_error
+import numpy as np
+import time
 
 
 @app.route('/', methods=['GET'])
@@ -106,14 +114,19 @@ def get_book_similar(book_id: int):
 @cross_origin()
 def get_top_100_books():
     LIMIT_BOOKS = 100
-    list_book_id = BookReview.query.order_by(
+    list_book_data = BookReview.query.order_by(
         BookReview.weighted_rating.desc()
     ).with_entities(
-        BookReview.book_id
+        BookReview.book_id,
+        BookReview.weighted_rating
     ).limit(LIMIT_BOOKS).all()
-    list_book_id = map(lambda x: x[0], list_book_id)
-    list_book = list(map(lambda x: x.get_data(),
-                     Book.query.filter(Book.id.in_(list_book_id)).all()))
+    list_book_id = map(lambda x: x[0], list_book_data)
+    list_book = list(map(lambda x: x.get_data(
+        cols=['id', 'image_url', 'title']), Book.query.filter(Book.id.in_(list_book_id)).all()))
+
+    for idx, book in enumerate(list_book_data):
+        list_book[idx]['weighted_rating'] = book[1]
+        
     return make_response(make_data(data=dict(list_book=list_book), msg="Return top 100 books"))
 
 
@@ -128,6 +141,7 @@ def update_user_rating(user_id: int, book_id: int, user_rating: int):
         if user_rating == 0:  # Lượt call mặc định
             return make_response(make_data(msg="There's no change on this user rating"))
         book_rating.rating = user_rating  # còn không thì cập nhật lại
+
     except:
         book_rating = BookRating(
             rating=user_rating, user_id=user_id, book_id=book_id)
@@ -141,10 +155,10 @@ def update_user_rating(user_id: int, book_id: int, user_rating: int):
 @cross_origin()
 def get_list_book_rated(user_id: int):
     try:
-        book_rating = BookRating.query.filter_by(user_id=user_id).filter_by(
-            rating > 0).with_entities(BookRating.book_id, BookRating.rating).all()
+        book_rating = BookRating.query.filter_by(user_id=user_id).filter(
+            BookRating.rating > 0).with_entities(BookRating.book_id, BookRating.rating).all()
         book_rated = list(map(lambda x: Book.query.filter(
-            Book.id == x[0]).first().get_data(), book_rating))
+            Book.id == x[0]).first().get_data(['id', 'image_url']), book_rating))
         for i, _ in enumerate(book_rated):
             book_rated[i]['user_rating'] = book_rating[i][1]
     except Exception as e:
@@ -175,18 +189,38 @@ def update_favorite(user_id: int, book_id: int):
 def get_book_favorited(user_id: int):
     favorited_book_ids = list(map(lambda x: x[0], BookFavorite.query.filter_by(
         user_id=user_id, is_favorite=True).with_entities(BookFavorite.book_id).all()))
-    favorited_books = list(map(lambda x: x.get_data(cols=['id', 'image_url']), Book.query.filter(Book.id.in_(favorited_book_ids)).all()))[::-1]
+    favorited_books = list(map(lambda x: x.get_data(
+        cols=['id', 'image_url']), Book.query.filter(Book.id.in_(favorited_book_ids)).all()))[::-1]
     return make_response(make_data(data=dict(list_books=favorited_books), msg="Return favorited book sucessfully!"))
 
 
-@app.route('/api/test/create-mock-user', methods=['POST'])
+@app.route('/api/create-user', methods=['POST'])
 @cross_origin()
-def create_mock_user():
+def create_user():
 
     try:
         data = request.get_json(force=True)
-        db.session.add(User(**data))
+        user = User(**data)
+        db.session.add(user)
         db.session.commit()
+
+        book_review = BookReview.query.options(
+            load_only(*['book_id', 'weighted_rating'])).all()
+
+        def create_object(data):
+            return RecommendInformation(
+                user_id=user.id,
+                book_id=data.book_id,
+                author_weight=data.weighted_rating,
+                genre_weight=data.weighted_rating
+            )
+
+        with cf.ThreadPoolExecutor() as exe:
+            list_objects = list(exe.map(create_object, book_review))
+
+        db.session.bulk_save_objects(list_objects)
+        db.session.commit()
+
     except Exception as e:
         return make_response(make_data(dict(error=str(e)), msg="Create user fail!", status='FAILURE'))
 
@@ -216,7 +250,7 @@ def get_reading_list_history(user_id):
 
         list_book = list(map(lambda x: x.get_data(cols=['id', 'image_url']), Book.query.filter(
             Book.id.in_(book_rating_ids)).all()))
-            
+
     except Exception as e:
         return make_response(make_data(dict(error=str(e)), msg="Return reading list history fail", status='FAILURE'))
 
@@ -243,28 +277,118 @@ def get_all_genres():
         return make_response(make_data(dict(error=str(e)), msg="Return list genres fail!", status='FAILURE'))
 
     return make_response(make_data(dict(list_genres=list_genres), msg="Return list genres successfully!"))
-    
+
 
 @app.route('/api/get-list-books-by-author-genre/<int:author_id>/<int:genre_id>', methods=['GET'])
 @cross_origin()
 def get_list_books_by_author_genre(author_id: int, genre_id: int):
     try:
 
-        list_book_id_1 = BookDetail.query.filter_by(author_id=author_id).with_entities(BookDetail.book_id).all()
+        list_book_id_1 = BookDetail.query.filter_by(
+            author_id=author_id).with_entities(BookDetail.book_id).all()
         list_book_id_1 = map(lambda x: x[0], list_book_id_1)
 
-        list_book_id_2 = BookGenre.query.filter_by(genre_id=genre_id).with_entities(BookGenre.book_id).all()
+        list_book_id_2 = BookGenre.query.filter_by(
+            genre_id=genre_id).with_entities(BookGenre.book_id).all()
         list_book_id_2 = map(lambda x: x[0], list_book_id_2)
 
         list_match_book_ids = set(list_book_id_1) | set(list_book_id_2)
 
         list_books = Book.query.filter(Book.id.in_(list_match_book_ids)).all()
         list_books = list(map(lambda x: x.get_data(), list_books))
-        
+
     except Exception as e:
         return make_response(make_data(dict(error=str(e)), msg="Return list genres fail!", status='FAILURE'))
 
     return make_response(make_data(dict(nums_books=len(list_books), list_books=list_books), msg="Return list genres successfully!"))
 
 
-# @app.route('/system/')
+@app.route('/api/get-list-book-recommend-by-author/<int:user_id>')
+@cross_origin()
+def get_list_book_recommend_by_author(user_id: int):
+    LIMIT_BOOK = 20
+
+    X = np.load('data/author_features.npy')
+    recommend_info_origin = RecommendInformation.query.filter_by(
+        user_id=user_id).all()
+
+    list_book_id = list(map(lambda x: x.book_id, recommend_info_origin))
+
+    user_rating_list = BookRating.query.filter(
+        and_(BookRating.user_id == user_id, BookRating.rating > 0)).all()
+
+    update_rating = {user.book_id: user.rating for user in user_rating_list}
+
+    recommend_info = list(map(lambda x: x.get_data(
+        ['book_id', 'author_weight']), recommend_info_origin))
+
+    for idx, info in enumerate(recommend_info):
+        rated = update_rating.get(info['book_id'], None)
+        if rated:
+            info['author_weight'] = rated
+
+    y = list(map(lambda x: x['author_weight'], recommend_info))
+
+    model = Ridge(alpha=1e-5, random_state=12)
+    model.fit(X, y)
+
+    y_pred = model.predict(X).tolist()
+    score = model.score(X, y)
+
+    for idx in range(len(recommend_info_origin)):
+        recommend_info_origin[idx].author_weight = y_pred[idx]
+    db.session.commit()
+
+    list_book_final = [book_id for weight, book_id in sorted(zip(y_pred, list_book_id), reverse=True, key=lambda x: x[0])]
+
+    list_book = Book.query.filter(Book.id.in_(list_book_final)).all()
+    list_book = list(map(lambda x: x.get_data(['id', 'image_url']), list_book))[:LIMIT_BOOK]
+
+    return make_response(make_data(dict(list_book=list_book, score=score), msg="OK"))
+
+
+@app.route('/api/get-list-book-recommend-by-genre/<int:user_id>')
+@cross_origin()
+def get_list_book_recommend_by_genre(user_id: int):
+    LIMIT_BOOK = 20
+
+    X = np.load('data/genre_features.npy')
+    recommend_info_origin = RecommendInformation.query.filter_by(
+        user_id=user_id).all()
+
+    list_book_id = list(map(lambda x: x.book_id, recommend_info_origin))
+
+    user_rating_list = BookRating.query.filter(
+        and_(BookRating.user_id == user_id, BookRating.rating > 0)).all()
+
+    update_rating = {user.book_id: user.rating for user in user_rating_list}
+
+    recommend_info = list(map(lambda x: x.get_data(
+        ['book_id', 'genre_weight']), recommend_info_origin))
+
+    for idx, info in enumerate(recommend_info):
+        rated = update_rating.get(info['book_id'], None)
+        if rated:
+            info['genre_weight'] = rated
+
+    y = list(map(lambda x: x['genre_weight'], recommend_info))
+
+    model = DecisionTreeRegressor(random_state=12)
+    model.fit(X, y)
+
+    y_pred = model.predict(X).tolist()
+    score = model.score(X, y)
+
+    for idx in range(len(recommend_info_origin)):
+        recommend_info_origin[idx].genre_weight = y_pred[idx]
+    db.session.commit()
+
+    list_book_final = [book_id for weight, book_id in sorted(zip(y_pred, list_book_id), reverse=True, key=lambda x: x[0])][:LIMIT_BOOK]
+    weight_final = [(weight, book_id) for weight, book_id in sorted(zip(y_pred, list_book_id), reverse=True, key=lambda x: x[0])][:LIMIT_BOOK]
+
+    print(list_book_final)
+
+    list_book = Book.query.filter(Book.id.in_(list_book_final)).all()
+    list_book = list(map(lambda x: x.get_data(['id', 'image_url', 'title']), list_book))
+
+    return make_response(make_data(dict(list_book=list_book, score=score), msg="OK"))

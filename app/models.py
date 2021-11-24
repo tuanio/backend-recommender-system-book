@@ -106,8 +106,11 @@ class BookReview(db.Model):
     # relationship one to one (khong duoc )
     book = db.relationship("Book", back_populates="book_review")
 
-    def get_data(self):
-        just_get = ['id', 'rating', 'reviews', 'total_ratings']
+    def get_data(self, cols=None):
+        if not cols:
+            just_get = ['id', 'rating', 'reviews', 'total_ratings']
+        else:
+            just_get = cols
         return get_subset(self.__dict__, just_get)
 
     def __repr__(self):
@@ -198,7 +201,7 @@ class KeyWord(db.Model):
 class BookRating(db.Model):
     __tablename__ = "bookrating"
     id = db.Column(db.Integer, primary_key=True)
-    rating = db.Column(db.Integer, nullable=False)
+    rating = db.Column(db.Integer, default=0, nullable=False)
     book_id = db.Column(db.Integer, db.ForeignKey("book.id"), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
 
@@ -238,3 +241,22 @@ class BookFavorite(db.Model):
 
     def __repr__(self):
         return "<BookFavorite ({0.id}, {0.is_favorite}, {0.user_id}, {0.book_id})>".format(self)
+
+
+class RecommendInformation(db.Model):
+    __tablename = 'recommendinformation'
+    id = db.Column(db.Integer, primary_key=True)
+    author_weight = db.Column(db.Float, nullable=False)
+    genre_weight = db.Column(db.Float, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    book_id = db.Column(db.Integer, db.ForeignKey("book.id"), nullable=False)
+
+    def get_data(self, cols=None):
+        if not cols:
+            just_get = ['id', 'user_id', 'book_id', 'author_weight', 'genre_weight']
+        else:
+            just_get = cols
+        return get_subset(self.__dict__, just_get)
+
+    def __repr__(self):
+        return "<RecommendInformation ({0.id}, {0.user_id}, {0.book_id}, {0.author_weight}, {0.genre_weight})>".format(self)
