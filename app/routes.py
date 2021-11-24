@@ -303,7 +303,7 @@ def get_list_books_by_author_genre(author_id: int, genre_id: int):
     return make_response(make_data(dict(nums_books=len(list_books), list_books=list_books), msg="Return list genres successfully!"))
 
 
-@app.route('/api/get-list-book-recommend-by-author/<int:user_id>')
+@app.route('/api/get-list-book-recommend-by-author/<int:user_id>', methods=['GET'])
 @cross_origin()
 def get_list_book_recommend_by_author(user_id: int):
     LIMIT_BOOK = 20
@@ -349,7 +349,7 @@ def get_list_book_recommend_by_author(user_id: int):
     return make_response(make_data(dict(list_book=list_book, score=score), msg="OK"))
 
 
-@app.route('/api/get-list-book-recommend-by-genre/<int:user_id>')
+@app.route('/api/get-list-book-recommend-by-genre/<int:user_id>', methods=['GET'])
 @cross_origin()
 def get_list_book_recommend_by_genre(user_id: int):
     LIMIT_BOOK = 20
