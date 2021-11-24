@@ -175,8 +175,7 @@ def update_favorite(user_id: int, book_id: int):
 def get_book_favorited(user_id: int):
     favorited_book_ids = list(map(lambda x: x[0], BookFavorite.query.filter_by(
         user_id=user_id, is_favorite=True).with_entities(BookFavorite.book_id).all()))
-    favorited_books = list(map(lambda x: x.get_data(
-    ), Book.query.filter(Book.id.in_(favorited_book_ids)).all()))[::-1]
+    favorited_books = list(map(lambda x: x.get_data(cols=['id', 'image_url']), Book.query.filter(Book.id.in_(favorited_book_ids)).all()))[::-1]
     return make_response(make_data(data=dict(list_books=favorited_books), msg="Return favorited book sucessfully!"))
 
 
@@ -215,8 +214,9 @@ def get_reading_list_history(user_id):
             user_id=user_id).with_entities(BookRating.book_id).all()
         book_rating_ids = list(map(lambda x: x[0], book_rating))
 
-        list_book = list(map(lambda x: x.get_data(), Book.query.filter(
+        list_book = list(map(lambda x: x.get_data(cols=['id', 'image_url']), Book.query.filter(
             Book.id.in_(book_rating_ids)).all()))
+            
     except Exception as e:
         return make_response(make_data(dict(error=str(e)), msg="Return reading list history fail", status='FAILURE'))
 
