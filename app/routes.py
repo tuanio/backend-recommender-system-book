@@ -287,7 +287,7 @@ def get_all_authors():
     except Exception as e:
         return make_response(make_data(dict(error=str(e)), msg="Return list authors fail!", status='FAILURE'))
 
-    return make_response(make_data(dict(list_authors=list_authors), msg="Return list authors successfully!"))
+    return make_response(make_data(list_authors, msg="Return list authors successfully!"))
 
 
 @app.route('/api/get-all-genres', methods=['GET'])
