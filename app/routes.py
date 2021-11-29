@@ -246,7 +246,18 @@ def create_user():
     except Exception as e:
         return make_response(make_data(dict(error=str(e)), msg="Create user fail!", status='FAILURE'))
 
-    return make_response(make_data(msg="Create user successfully!"))
+    return make_response(make_data(dict(user_id=user.id), msg="Create user successfully!"))
+
+@app.route('/api/get-user/<int:user_id>')
+@cross_origin()
+def get_user(user_id: int):
+
+    try:
+        user = User.query.filter_by(id=user_id).first().get_data()
+    except:
+        return make_response(make_data(dict(error=str(e)), msg="Return user info fail!", status='FAILURE'))
+
+    return make_response(make_data(dict(user=user), msg="Create user successfully!"))
 
 
 @app.route('/api/get-all-users', methods=['GET'])
@@ -325,7 +336,7 @@ def get_list_books_by_author_genre(author_id: int, genre_id: int):
     except Exception as e:
         return make_response(make_data(dict(error=str(e)), msg="Return list genres fail!", status='FAILURE'))
 
-    return make_response(make_data(dict(nums_books=len(list_books), list_books=list_books), msg="Return list genres successfully!"))
+    return make_response(make_data(dict(no_books=len(list_books), list_books=list_books), msg="Return list genres successfully!"))
 
 
 @app.route('/api/get-list-book-recommend-by-author/<int:user_id>', methods=['GET'])
