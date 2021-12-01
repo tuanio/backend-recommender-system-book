@@ -57,6 +57,39 @@ def get_book(book_id: int):
 
     return make_response(make_data(data=ret_data, msg="Return a book successfully!"))
 
+@app.route('/api/get-all-authors', methods=['GET'])
+@cross_origin()
+def get_all_authors():
+    try:
+        list_authors = list(map(lambda x: x.get_data(), Author.query.all()))
+    except Exception as e:
+        return make_response(make_data(dict(error=str(e)), msg="Return list authors fail!", status='FAILURE'))
+
+    return make_response(make_data(dict(list_authors=list_authors), msg="Return list authors successfully!"))
+
+
+@app.route('/api/get-all-users', methods=['GET'])
+@cross_origin()
+def get_all_user():
+
+    try:
+        list_users = list(map(lambda x: x.get_data(), User.query.all()))
+    except Exception as e:
+        return make_response(make_data(dict(error=str(e)), msg="Return list user fail", status='FAILURE'))
+
+    return make_response(make_data(dict(list_users=list_users), msg="Return list user successfully!"))
+
+
+@app.route('/api/get-all-genres', methods=['GET'])
+@cross_origin()
+def get_all_genres():
+    try:
+        list_genres = list(map(lambda x: x.get_data(), Genre.query.all()))
+    except Exception as e:
+        return make_response(make_data(dict(error=str(e)), msg="Return list genres fail!", status='FAILURE'))
+
+    return make_response(make_data(dict(list_genres=list_genres), msg="Return list genres successfully!"))
+
 
 @app.route('/api/update-count-author-genre/<int:user_id>/<int:book_id>', methods=['PUT'])
 @cross_origin()
@@ -260,56 +293,24 @@ def get_user(user_id: int):
     return make_response(make_data(dict(user=user), msg="Create user successfully!"))
 
 
-@app.route('/api/get-all-users', methods=['GET'])
-@cross_origin()
-def get_all_user():
-
-    try:
-        list_users = list(map(lambda x: x.get_data(), User.query.all()))
-    except Exception as e:
-        return make_response(make_data(dict(error=str(e)), msg="Return list user fail", status='FAILURE'))
-
-    return make_response(make_data(dict(list_users=list_users), msg="Return list user successfully!"))
-
-
 @app.route('/api/get-reading-list-history/<int:user_id>', methods=['GET'])
 @cross_origin()
 def get_reading_list_history(user_id):
 
     try:
         book_rating = BookRating.query.filter_by(
-            user_id=user_id).with_entities(BookRating.book_id).all()
+            user_id=user_id).with_entities(BookRating.book_id, BookRating.rating).all()
         book_rating_ids = list(map(lambda x: x[0], book_rating))
 
-        list_book = list(map(lambda x: x.get_data(cols=['id', 'image_url']), Book.query.filter(
+        list_book = list(map(lambda x: x.get_data(cols=['id', 'image_url', 'title']), Book.query.filter(
             Book.id.in_(book_rating_ids)).all()))
+        for idx, _ in enumerate(list_book):
+            list_book[idx]['rating'] = book_rating[idx][1]
 
     except Exception as e:
         return make_response(make_data(dict(error=str(e)), msg="Return reading list history fail", status='FAILURE'))
 
     return make_response(make_data(dict(list_book=list_book), msg="Return reading list history successfully!"))
-
-
-@app.route('/api/get-all-authors', methods=['GET'])
-@cross_origin()
-def get_all_authors():
-    try:
-        list_authors = list(map(lambda x: x.get_data(), Author.query.all()))
-    except Exception as e:
-        return make_response(make_data(dict(error=str(e)), msg="Return list authors fail!", status='FAILURE'))
-
-    return make_response(make_data(dict(list_authors=list_authors), msg="Return list authors successfully!"))
-
-
-@app.route('/api/get-all-genres', methods=['GET'])
-@cross_origin()
-def get_all_genres():
-    try:
-        list_genres = list(map(lambda x: x.get_data(), Genre.query.all()))
-    except Exception as e:
-        return make_response(make_data(dict(error=str(e)), msg="Return list genres fail!", status='FAILURE'))
-
-    return make_response(make_data(dict(list_genres=list_genres), msg="Return list genres successfully!"))
 
 
 @app.route('/api/get-list-books-by-author-genre/<int:author_id>/<int:genre_id>', methods=['GET'])
@@ -459,12 +460,17 @@ def get_some_book_similar_at_all(user_id: int):
 
         # choose random min(LIMIT_BOOK, len(book_similar_id))
         book_similar_id = np.random.choice(
-            book_similar_id, size=min(LIMIT_BOOK, len(book_similar_id)))
+            book_similar_id, size=min(LIMIT_BOOK, len(book_similar_id))).tolist()
 
         list_book = Book.query.filter(Book.id.in_(book_similar_id)).all()
+
         list_book = list(map(lambda x: x.get_data(
             ['id', 'image_url', 'title']), list_book))
     except Exception as e:
         return make_response(make_data(dict(error=str(e)), msg="Return top similar book fail!", status='FAILURE'))
 
     return make_response(make_data(dict(list_book=list_book), msg="Return top similar book successfully!"))
+
+
+# @app.route('/api/get-one-top-book', methods=['GET'])
+# def get_one_top_book():
