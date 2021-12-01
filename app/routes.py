@@ -1,19 +1,21 @@
+import time
+import numpy as np
 from pprint import pprint
-from flask import request
 import concurrent.futures as cf
+from collections import Counter
+
+from flask import request
 from flask_cors import cross_origin
+
 from app.models import *
-from app import app, db, status_code
+from app import app, db
 from app.utils import make_response, make_data
+
 from sqlalchemy.orm import load_only
 from sqlalchemy import and_
+
 from sklearn.linear_model import Ridge
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.tree import DecisionTreeRegressor
-from sklearn.neural_network import MLPRegressor
-from sklearn.metrics import mean_squared_error
-import numpy as np
-import time
 
 
 @app.route('/', methods=['GET'])
@@ -149,8 +151,12 @@ def get_book_similar(book_id: int):
         similar_books = BookDescriptionSimilarities.query.filter_by(
             book_id=book_id).all()
         similar_books = list(map(lambda x: x.book_recommend_id, similar_books))
-        similar_books = list(map(lambda x: Book.query.filter_by(
-            id=x).first().get_data(cols=['id', 'image_url']), similar_books))
+        
+        weighted_rating = BookReview.query.filter(BookReview.book_id.in_(similar_books)).with_entities(BookReview.weighted_rating).all()
+        
+        similar_books = list(map(lambda x: Book.query.filter_by(id=x).first().get_data(cols=['id', 'image_url', 'title']), similar_books))
+        similar_books = [dict(item, rating=rating[0]) for item, rating in zip(similar_books, weighted_rating)]
+        
     except Exception as e:
         return make_response(make_data(dict(error=str(e)), msg="Return top 10 book similar fail!", status='FAILURE'))
 
@@ -173,8 +179,8 @@ def get_top_100_books():
         list_book = list(map(lambda x: x.get_data(
             cols=['id', 'image_url', 'title']), Book.query.filter(Book.id.in_(list_book_id)).all()))
 
-        for idx, book in enumerate(list_book_data):
-            list_book[idx]['weighted_rating'] = book[1]
+        list_book = [dict(item, rating=rating[1]) for item, rating in zip(list_book, list_book_data)]
+
     except Exception as e:
         return make_response(make_data(dict(error=str(e)), msg="Return top 100 books fail!", status='FAILURE'))
 
@@ -208,13 +214,12 @@ def get_list_book_rated(user_id: int):
     try:
         book_rating = BookRating.query.filter_by(user_id=user_id).filter(
             BookRating.rating > 0).with_entities(BookRating.book_id, BookRating.rating).all()
-        book_rated = list(map(lambda x: Book.query.filter(
-            Book.id == x[0]).first().get_data(['id', 'image_url']), book_rating))
-        for i, _ in enumerate(book_rated):
-            book_rated[i]['user_rating'] = book_rating[i][1]
+        list_book = list(map(lambda x: Book.query.filter(
+            Book.id == x[0]).first().get_data(['id', 'image_url', 'title']), book_rating))
+        list_book = [dict(item, rating=rating[1]) for item, rating in zip(list_book, book_rating)]
     except Exception as e:
         return make_response(make_data(data=dict(error=str(e)), msg="Return list book rated fail!", status='FAILURE'))
-    return make_response(make_data(data=dict(list_books=book_rated), msg="Return list book rated successfully!"))
+    return make_response(make_data(data=dict(list_books=list_book), msg="Return list book rated successfully!"))
 
 
 @app.route('/api/update-favorite/<int:user_id>/<int:book_id>', methods=['PUT'])
@@ -241,8 +246,11 @@ def get_book_favorited(user_id: int):
     try:
         favorited_book_ids = list(map(lambda x: x[0], BookFavorite.query.filter_by(
             user_id=user_id, is_favorite=True).with_entities(BookFavorite.book_id).all()))
+        
+
         favorited_books = list(map(lambda x: x.get_data(
-            cols=['id', 'image_url']), Book.query.filter(Book.id.in_(favorited_book_ids)).all()))[::-1]
+            cols=['id', 'image_url', 'title']), Book.query.filter(Book.id.in_(favorited_book_ids)).all()))[::-1]
+        
     except Exception as e:
         return make_response(make_data(dict(error=str(e)), msg="Return favorited book fail!", status='FAILURE'))
 
@@ -304,8 +312,8 @@ def get_reading_list_history(user_id):
 
         list_book = list(map(lambda x: x.get_data(cols=['id', 'image_url', 'title']), Book.query.filter(
             Book.id.in_(book_rating_ids)).all()))
-        for idx, _ in enumerate(list_book):
-            list_book[idx]['rating'] = book_rating[idx][1]
+        list_book = [dict(item, rating=rating[1]) for item, rating in zip(list_book, book_rating)]
+
 
     except Exception as e:
         return make_response(make_data(dict(error=str(e)), msg="Return reading list history fail", status='FAILURE'))
@@ -330,9 +338,12 @@ def get_list_books_by_author_genre(author_id: int, genre_id: int):
 
         list_match_book_ids = set(list_book_id_1) | set(list_book_id_2)
 
-        list_books = Book.query.filter(Book.id.in_(list_match_book_ids)).all()
+        weighted_rating = BookReview.query.filter(BookReview.book_id.in_(list_match_book_ids)).with_entities(BookReview.weighted_rating).all()
+
+        list_books = Book.query.filter(Book.id.in_(list_match_book_ids)).limit(LIMIT_BOOK).all()
         list_books = list(map(lambda x: x.get_data(cols=['id', 'image_url', 'title']), list_books))
-        list_books = list_books[:LIMIT_BOOK]
+        
+        list_books = [dict(item, rating=rating[0]) for item, rating in zip(list_books, weighted_rating)]
 
     except Exception as e:
         return make_response(make_data(dict(error=str(e)), msg="Return list genres fail!", status='FAILURE'))
@@ -377,12 +388,15 @@ def get_list_book_recommend_by_author(user_id: int):
             recommend_info_origin[idx].author_weight = y_pred[idx]
         db.session.commit()
 
-        list_book_final = [book_id for weight, book_id in sorted(
-            zip(y_pred, list_book_id), reverse=True, key=lambda x: x[0])]
+        list_book_final = [book_id for weight, book_id in sorted(zip(y_pred, list_book_id), reverse=True, key=lambda x: x[0])][:LIMIT_BOOK]
+        weighted_rating = BookReview.query.filter(BookReview.book_id.in_(list_book_final)).with_entities(BookReview.weighted_rating).all()
 
         list_book = Book.query.filter(Book.id.in_(list_book_final)).all()
-        list_book = list(map(lambda x: x.get_data(['id', 'image_url']), list_book))[
-            :LIMIT_BOOK]
+        list_book = list(map(lambda x: x.get_data(['id', 'image_url', 'title']), list_book))
+
+        list_book = [dict(item, rating=rating[0]) for item, rating in zip(list_book, weighted_rating)]
+
+        
     except Exception as e:
         return make_response(make_data(dict(error=str(e)), msg="Return list recommend books by author fail!", status='FAILURE'))
 
@@ -429,12 +443,14 @@ def get_list_book_recommend_by_genre(user_id: int):
 
         list_book_final = [book_id for weight, book_id in sorted(
             zip(y_pred, list_book_id), reverse=True, key=lambda x: x[0])][:LIMIT_BOOK]
-        weight_final = [(weight, book_id) for weight, book_id in sorted(
-            zip(y_pred, list_book_id), reverse=True, key=lambda x: x[0])][:LIMIT_BOOK]
+        weighted_rating = BookReview.query.filter(BookReview.book_id.in_(list_book_final)).with_entities(BookReview.weighted_rating).all()
 
         list_book = Book.query.filter(Book.id.in_(list_book_final)).all()
-        list_book = list(map(lambda x: x.get_data(
-            ['id', 'image_url', 'title']), list_book))
+        list_book = list(map(lambda x: x.get_data(['id', 'image_url', 'title']), list_book))
+
+        list_book = [dict(item, rating=rating[0]) for item, rating in zip(list_book, weighted_rating)]
+
+
     except Exception as e:
         return make_response(make_data(dict(error=str(e)), msg="Return list recommend books by genre fail!", status='FAILURE'))
 
@@ -464,13 +480,25 @@ def get_some_book_similar_at_all(user_id: int):
 
         list_book = Book.query.filter(Book.id.in_(book_similar_id)).all()
 
-        list_book = list(map(lambda x: x.get_data(
-            ['id', 'image_url', 'title']), list_book))
+        list_book = list(map(lambda x: x.get_data(['id', 'image_url', 'title']), list_book))
+        weighted_rating = BookReview.query.filter(BookReview.book_id.in_(book_similar_id)).with_entities(BookReview.weighted_rating).all()
+
+        list_book = [dict(item, rating=rating[0]) for item, rating in zip(list_book, weighted_rating)]
+
     except Exception as e:
         return make_response(make_data(dict(error=str(e)), msg="Return top similar book fail!", status='FAILURE'))
 
     return make_response(make_data(dict(list_book=list_book), msg="Return top similar book successfully!"))
 
 
-# @app.route('/api/get-one-top-book', methods=['GET'])
-# def get_one_top_book():
+@app.route('/api/get-one-top-book', methods=['GET'])
+def get_one_top_book():
+    try:
+        book_rating = db.session.query(BookRating.book_id).all()
+        book_rating = list(map(lambda x: x[0], book_rating))
+        top_book_id = Counter(book_rating).most_common(1)[0][0]
+
+    except Exception as e:
+        return make_response(make_data(dict(error=str(e)), msg="Return top one book fail!", status='FAILURE'))
+
+    return get_book(top_book_id)

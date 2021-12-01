@@ -28,11 +28,12 @@ def get_subset(dictionary, keys):
 
 
 def make_data(data: dict=dict(), msg: str="", status: str='SUCCESS') -> dict:
-    return dict(
+    ret_data = dict(
         data=data,
         msg=msg,
         status_code=status_code[status]
     )
+    return ret_data
 
 def write(string):
     sys.stdout.write(string + '\n')
