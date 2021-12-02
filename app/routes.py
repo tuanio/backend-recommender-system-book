@@ -495,6 +495,8 @@ def get_some_book_similar_at_all(user_id: int):
 def get_one_top_book():
     try:
         book_rating = db.session.query(BookRating.book_id).all()
+        # get the default book when no 
+        book_rating = [[1]] if not book_rating else book_rating
         book_rating = list(map(lambda x: x[0], book_rating))
         top_book_id = Counter(book_rating).most_common(1)[0][0]
 
