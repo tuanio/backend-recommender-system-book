@@ -24,9 +24,9 @@ def index():
     return make_response(dict(msg="Hello world"))
 
 
-@app.route('/api/get-book/<int:book_id>', methods=['GET'])
+@app.route('/api/get-book/<int:user_id>/<int:book_id>', methods=['GET'])
 @cross_origin()
-def get_book(book_id: int):
+def get_book(user_id: int, book_id: int):
     '''
     return information of a book
     # thiếu genre
@@ -55,6 +55,17 @@ def get_book(book_id: int):
         ret_data.update(book_review)
         ret_data['authors'] = authors_names
         ret_data['genres'] = genres
+
+        try:
+            ret_data['user_rating'] = BookRating.query.filter_by(user_id=user_id, book_id=book_id).first().rating
+        except Exception as e:
+            ret_data['user_rating'] = 0
+
+        try:
+            ret_data['is_favorite'] = BookFavorite.query.filter_by(user_id=user_id, book_id=book_id).first().is_favorite
+        except:
+            ret_data['is_favorite'] = False
+
     except Exception as e:
         return make_response(make_data(dict(error=str(e)), msg="Return a book fail!", status='FAILURE'))
 
@@ -212,22 +223,6 @@ def update_user_rating(user_id: int, book_id: int, user_rating: int):
 
     db.session.commit()
     return make_response(make_data(msg="Update rating successfully!"))
-
-@app.route('/api/get-user-rating/<int:user_id>/<int:book_id>', methods=['GET'])
-@cross_origin()
-def get_user_rating(user_id: int, book_id: int):
-    try:
-        book_rating = BookRating.query.filter_by(
-            user_id=user_id, book_id=book_id).first()
-        assert book_rating  # check where is None
-        # nếu vượt qua cái assert thì nghĩa là có rồi, chỉ cần get
-
-        book_rating = book_rating.rating
-
-    except Exception as e:
-        return make_response(make_data(data=dict(error=str(e)), msg="Get user rating for book fail!", status='FAILURE'))
-
-    return make_response(make_data(dict(rating=book_rating), msg="Get user rating for book successfully!"))
 
 
 @app.route('/api/get-list-book-rated/<int:user_id>', methods=['GET'])
