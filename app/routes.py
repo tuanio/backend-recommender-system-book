@@ -213,6 +213,22 @@ def update_user_rating(user_id: int, book_id: int, user_rating: int):
     db.session.commit()
     return make_response(make_data(msg="Update rating successfully!"))
 
+@app.route('/api/get-user-rating/<int:user_id>/<int:book_id>', methods=['GET'])
+@cross_origin()
+def get_user_rating(user_id: int, book_id: int):
+    try:
+        book_rating = BookRating.query.filter_by(
+            user_id=user_id, book_id=book_id).first()
+        assert book_rating  # check where is None
+        # nếu vượt qua cái assert thì nghĩa là có rồi, chỉ cần get
+
+        book_rating = book_rating.rating
+
+    except Exception as e:
+        return make_response(make_data(data=dict(error=str(e)), msg="Get user rating for book fail!", status='FAILURE'))
+
+    return make_response(make_data(dict(rating=book_rating), msg="Get user rating for book successfully!"))
+
 
 @app.route('/api/get-list-book-rated/<int:user_id>', methods=['GET'])
 @cross_origin()
