@@ -7,6 +7,7 @@ Contact: github.com/Thinh127
 
 from pydantic import BaseModel
 
+
 class BookDto(BaseModel):
     isbn: str = None
     isbn13: str = None
@@ -15,6 +16,7 @@ class BookDto(BaseModel):
     pages: int = None
     image_url: str = None
     book_url: str = None
+
 
 class BookReview(BaseModel):
     rating: float = None

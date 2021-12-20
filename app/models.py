@@ -2,11 +2,6 @@ from enum import unique
 from app import db
 from app.utils import get_subset
 
-# db.relationship(name_of_class, back_ref ="name_of_relation", lazy= True)
-db.drop_all()
-db.metadata.clear()
-
-
 class Author(db.Model):
     __tablename__ = "author"
     id = db.Column(db.Integer, primary_key=True)
@@ -17,7 +12,7 @@ class Author(db.Model):
 
     def get_data(self, cols=None):
         if not cols:
-            just_get = ['id', 'full_name']
+            just_get = ["id", "full_name"]
         else:
             just_get = cols
         return get_subset(self.__dict__, just_get)
@@ -36,7 +31,7 @@ class Genre(db.Model):
 
     def get_data(self, cols=None):
         if not cols:
-            just_get = ['id', 'kind']
+            just_get = ["id", "kind"]
         else:
             just_get = cols
         return get_subset(self.__dict__, just_get)
@@ -52,7 +47,8 @@ class BookFormat(db.Model):
     type_ = db.Column(db.String(255))
     # relation one to many
     bookformat_detail = db.relationship(
-        "BookFormatDetail", backref="bookformat", lazy=True)
+        "BookFormatDetail", backref="bookformat", lazy=True
+    )
 
     def __repr__(self):
         return "<BookFormat ({},{})>".format(self.id, self.type)
@@ -69,21 +65,29 @@ class Book(db.Model):
     image_url = db.Column(db.String(255))
     book_url = db.Column(db.String(255))
     # relation one to many
-    book_detail = db.relationship(
-        "BookDetail", backref="book_detail", lazy=True)
+    book_detail = db.relationship("BookDetail", backref="book_detail", lazy=True)
     book_genre = db.relationship("BookGenre", backref="book_genre", lazy=True)
     book_format_detail = db.relationship(
-        "BookFormatDetail", backref="book_format", lazy=True)
-    book_review = db.relationship(
-        "BookReview", back_populates="book", uselist=False)
+        "BookFormatDetail", backref="book_format", lazy=True
+    )
+    book_review = db.relationship("BookReview", back_populates="book", uselist=False)
     book_description = db.relationship(
-        "BookDescriptionSimilarities", backref="book_description", lazy=True)
+        "BookDescriptionSimilarities", backref="book_description", lazy=True
+    )
     # book_rating = db.relationship("BookRating",backref="book_rating", lazy=True)
 
     def get_data(self, cols=None):
         if not cols:
-            just_get = ['id', 'isbn', 'isbn13', 'title',
-                        'desc', 'pages', 'image_url', 'book_url']
+            just_get = [
+                "id",
+                "isbn",
+                "isbn13",
+                "title",
+                "desc",
+                "pages",
+                "image_url",
+                "book_url",
+            ]
         else:
             just_get = cols
         return get_subset(self.__dict__, just_get)
@@ -97,12 +101,12 @@ class Book(db.Model):
             self.desc,
             self.pages,
             self.image_url,
-            self.book_url
+            self.book_url,
         )
 
 
 class BookReview(db.Model):
-    __tablename__ = 'bookreview'
+    __tablename__ = "bookreview"
     id = db.Column(db.Integer, primary_key=True)
     rating = db.Column(db.Float, nullable=False)
     reviews = db.Column(db.Integer, nullable=False)
@@ -114,7 +118,7 @@ class BookReview(db.Model):
 
     def get_data(self, cols=None):
         if not cols:
-            just_get = ['id', 'rating', 'reviews', 'total_ratings']
+            just_get = ["id", "rating", "reviews", "total_ratings"]
         else:
             just_get = cols
         return get_subset(self.__dict__, just_get)
@@ -126,7 +130,7 @@ class BookReview(db.Model):
             self.reviews,
             self.total_ratings,
             self.book_id,
-            self.weighted_rating
+            self.weighted_rating,
         )
 
 
@@ -134,8 +138,7 @@ class BookDetail(db.Model):
     __tablename__ = "bookdetail"
     id = db.Column(db.Integer, primary_key=True)
     book_id = db.Column(db.Integer, db.ForeignKey("book.id"), nullable=False)
-    author_id = db.Column(db.Integer, db.ForeignKey(
-        "author.id"), nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey("author.id"), nullable=False)
 
     def __repr__(self):
         return "<BookDetail({},{},{})>".format((self.id, self.book_id, self.author_id))
@@ -156,10 +159,13 @@ class BookFormatDetail(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     book_id = db.Column(db.Integer, db.ForeignKey("book.id"), nullable=False)
     book_format_id = db.Column(
-        db.Integer, db.ForeignKey("bookformat.id"), nullable=False)
+        db.Integer, db.ForeignKey("bookformat.id"), nullable=False
+    )
 
     def __repr__(self):
-        return "<BookFormatDetail({},{},{})>".format(self.id, self.book_id, self.book_format_id)
+        return "<BookFormatDetail({},{},{})>".format(
+            self.id, self.book_id, self.book_format_id
+        )
 
 
 class BookDescriptionSimilarities(db.Model):
@@ -169,7 +175,9 @@ class BookDescriptionSimilarities(db.Model):
     book_recommend_id = db.Column(db.Integer)
 
     def __repr__(self):
-        return "<BookDescription({},{},{})>".format(self.id, self.book_id, self.book_recommend_id)
+        return "<BookDescription({},{},{})>".format(
+            self.id, self.book_id, self.book_recommend_id
+        )
 
 
 class User(db.Model):
@@ -180,18 +188,18 @@ class User(db.Model):
     user_email = db.Column(db.String(255))
     # relation one to many with keyword
     keywords = db.relationship("KeyWord", backref="keywords", lazy=True)
-    user_rating = db.relationship(
-        "BookRating", backref="user_rating", lazy=True)
-    author_counts = db.relationship(
-        "AuthorCount", backref="author_counts", lazy=True)
+    user_rating = db.relationship("BookRating", backref="user_rating", lazy=True)
+    author_counts = db.relationship("AuthorCount", backref="author_counts", lazy=True)
     genre_counts = db.relationship("GenreCount", backref="genre_counts")
 
     def get_data(self):
-        just_get = ['id', 'uid', 'user_name', 'user_email']
+        just_get = ["id", "uid", "user_name", "user_email"]
         return get_subset(self.__dict__, just_get)
 
     def __repr__(self):
-        return "<User({},{},{},{})>".format(self.id, self.uid, self.user_name, self.user_email)
+        return "<User({},{},{},{})>".format(
+            self.id, self.uid, self.user_name, self.user_email
+        )
 
 
 class KeyWord(db.Model):
@@ -212,19 +220,22 @@ class BookRating(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
 
     def __repr__(self):
-        return "<BookRating({},{},{},{})>".format(self.id, self.rating, self.book_id, self.user_id)
+        return "<BookRating({},{},{},{})>".format(
+            self.id, self.rating, self.book_id, self.user_id
+        )
 
 
 class AuthorCount(db.Model):
     __tablename__ = "authorcount"
     id = db.Column(db.Integer, primary_key=True, unique=True)
     numbers_counts = db.Column(db.Integer, nullable=False, default=1)
-    author_id = db.Column(db.Integer, db.ForeignKey(
-        "author.id"), nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey("author.id"), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
 
     def __repr__(self):
-        return "<AuthorCount ({},{},{},{})>".format(self.id, self.numbers_counts, self.author_id, self.user_id)
+        return "<AuthorCount ({},{},{},{})>".format(
+            self.id, self.numbers_counts, self.author_id, self.user_id
+        )
 
 
 class GenreCount(db.Model):
@@ -235,22 +246,28 @@ class GenreCount(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
 
     def __repr__(self):
-        return "<GenreCount ({},{},{},{})>".format(self.id, self.numbers_counts, self.genre_id, self.user_id)
+        return "<GenreCount ({},{},{},{})>".format(
+            self.id, self.numbers_counts, self.genre_id, self.user_id
+        )
 
 
 class BookFavorite(db.Model):
-    __tablename__ = 'bookfavorite'
+    __tablename__ = "bookfavorite"
     id = db.Column(db.Integer, primary_key=True)
     is_favorite = db.Column(db.Boolean, default=True)
     book_id = db.Column(db.Integer, db.ForeignKey("book.id"), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
 
     def __repr__(self):
-        return "<BookFavorite ({0.id}, {0.is_favorite}, {0.user_id}, {0.book_id})>".format(self)
+        return (
+            "<BookFavorite ({0.id}, {0.is_favorite}, {0.user_id}, {0.book_id})>".format(
+                self
+            )
+        )
 
 
 class RecommendInformation(db.Model):
-    __tablename = 'recommendinformation'
+    __tablename = "recommendinformation"
     id = db.Column(db.Integer, primary_key=True)
     author_weight = db.Column(db.Float, nullable=False)
     genre_weight = db.Column(db.Float, nullable=False)
@@ -259,10 +276,12 @@ class RecommendInformation(db.Model):
 
     def get_data(self, cols=None):
         if not cols:
-            just_get = ['id', 'user_id', 'book_id', 'author_weight', 'genre_weight']
+            just_get = ["id", "user_id", "book_id", "author_weight", "genre_weight"]
         else:
             just_get = cols
         return get_subset(self.__dict__, just_get)
 
     def __repr__(self):
-        return "<RecommendInformation ({0.id}, {0.user_id}, {0.book_id}, {0.author_weight}, {0.genre_weight})>".format(self)
+        return "<RecommendInformation ({0.id}, {0.user_id}, {0.book_id}, {0.author_weight}, {0.genre_weight})>".format(
+            self
+        )
