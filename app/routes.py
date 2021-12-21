@@ -546,7 +546,7 @@ def get_list_books_by_author_genre(author_id: int, genre_id: int):
         )
         list_book_id_2 = map(lambda x: x[0], list_book_id_2)
 
-        list_match_book_ids = set(list_book_id_1) | set(list_book_id_2)
+        list_match_book_ids = set(list_book_id_1) & set(list_book_id_2)
 
         weighted_rating = (
             BookReview.query.filter(BookReview.book_id.in_(list_match_book_ids))
