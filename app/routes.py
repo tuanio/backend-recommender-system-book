@@ -537,16 +537,16 @@ def get_list_books_by_author_genre(author_id: int, genre_id: int):
             .with_entities(BookDetail.book_id)
             .all()
         )
-        list_book_id_1 = map(lambda x: x[0], list_book_id_1)
+        list_book_id_1 = list(map(lambda x: x[0], list_book_id_1))
 
         list_book_id_2 = (
             BookGenre.query.filter_by(genre_id=genre_id)
             .with_entities(BookGenre.book_id)
             .all()
         )
-        list_book_id_2 = map(lambda x: x[0], list_book_id_2)
+        list_book_id_2 = list(map(lambda x: x[0], list_book_id_2))
 
-        list_match_book_ids = set(list_book_id_1) & set(list_book_id_2)
+        list_match_book_ids = set(list_book_id_1) | set(list_book_id_2)
 
         weighted_rating = (
             BookReview.query.filter(BookReview.book_id.in_(list_match_book_ids))
