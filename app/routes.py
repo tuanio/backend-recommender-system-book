@@ -817,6 +817,8 @@ def get_one_top_book():
         book_counter = Counter(book_rating)
         top_book_id = book_counter.most_common(1)[0][0]
 
+        print(book_counter)
+
     except Exception as e:
         return make_response(
             make_data(
