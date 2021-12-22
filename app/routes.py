@@ -543,7 +543,7 @@ def get_list_books_by_author_genre(author_id: int, genre_id: int):
             BookGenre.query.filter_by(genre_id=genre_id)
             .with_entities(BookGenre.book_id)
             .all()
-        )
+        ) 
         list_book_id_2 = list(map(lambda x: x[0], list_book_id_2))
 
         list_match_book_ids = set(list_book_id_1) | set(list_book_id_2)
@@ -814,7 +814,8 @@ def get_one_top_book():
         # get the default book when no
         book_rating = [[1]] if not book_rating else book_rating
         book_rating = list(map(lambda x: x[0], book_rating))
-        top_book_id = Counter(book_rating).most_common(1)[0][0]
+        book_counter = Counter(book_rating)
+        top_book_id = book_counter.most_common(1)[0][0]
 
     except Exception as e:
         return make_response(
